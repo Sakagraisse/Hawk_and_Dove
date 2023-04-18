@@ -53,4 +53,17 @@ toc = time.perf_counter()
 
 ds.get_plot()
 
+#pyqt essaie flo.
+#We implement
+
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QLineEdit,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
