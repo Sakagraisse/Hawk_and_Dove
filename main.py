@@ -106,8 +106,6 @@ class MainWindow(QWidget):
 
     def update_groupbox_graph(self):
         self.groupbox_graph.update()
-    def default(self):
-        pass
 
     def update_fight_range(self, food_value):
         self.fight.setRange((food_value / 2) + 0.1, 50)
@@ -159,7 +157,7 @@ class MainWindow(QWidget):
         self.seed.setMinimum(-1)
         self.seed.setMaximum(10000)
         self.seed.setValue(1)
-        seed_label = QLabel('Seed: ')
+        seed_label = QLabel('Seed (enter negative value for random): ')
 
         ## mutation
         self.dove_to_hawk = QSpinBox(self)
@@ -366,4 +364,3 @@ if __name__ == '__main__':
     window = MainWindow()
 
     sys.exit(app.exec())
-

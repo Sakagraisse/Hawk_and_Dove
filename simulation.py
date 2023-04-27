@@ -22,11 +22,11 @@ def run_sim(params):
     # create the dataframe to store the results
     results = pd.DataFrame(columns=["generation", "total population",
                                     "population increase %",
-                                    "proportion of dove"])
+                                    "proportion of dove", "proportion of hawk"])
 
 
     print('launching simulation')
-
+    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
     tic = time.perf_counter()
     for period in range(1, params["GEN"]):
         shuffle(pop)
@@ -99,12 +99,11 @@ class Player :
 # and the proportion of dove is set by : number_of_doves
 def create_initial_pop(number_of_indiv, number_of_doves):
     initial_pop = []
-    for i in range(number_of_indiv):
-        rnd = random()
-        if rnd > number_of_doves:
-            initial_pop.append(Player("hawk"))
-        else:
-            initial_pop.append(Player("dove"))
+    total_doves = int(round(number_of_doves * number_of_indiv,0))
+    for i in range(total_doves):
+        initial_pop.append(Player("dove"))
+    for j in range(number_of_indiv - total_doves):
+        initial_pop.append(Player("hawk"))
     return initial_pop
 
 ################
@@ -255,9 +254,9 @@ def study_population_basic(pop_t):
     for j in range(len(pop_t)):
         if pop_t[j].type == "dove" : dove_count += 1
     try:
-        year_t = [ len(pop_t) , dove_count , 1-dove_count/len(pop_t) ]
+        year_t = [ len(pop_t) , dove_count , dove_count/len(pop_t), 1-dove_count/len(pop_t) ]
     except:
-        year_t = [len(pop_t), dove_count, -1]
+        year_t = [len(pop_t), dove_count, 0,0]
     return year_t
 
 
