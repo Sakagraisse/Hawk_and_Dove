@@ -16,10 +16,16 @@ class handle_simulation(QThread):
         super().__init__()
         self.parameters = parameters
         self.results = results
+        self.stop_flag = False
+
+    def stop(self):
+        self.stop_flag = True
     def run(self):
         # Exécuter la première tâche
         new_fig = sim.run_sim(self.parameters,self.results)
         self.simulation.emit(new_fig)
+        if self.stop_flag:
+            return None
 
 class update_progress_bar(QThread):
     progress = pyqtSignal(int)
@@ -27,14 +33,17 @@ class update_progress_bar(QThread):
         super().__init__()
         self.parameters = parameters
         self.results = results
+        self.stop_flag = False
+    def stop(self):
+        self.stop_flag = True
     def run(self):
         #check every 50ms the number of line or results and update the progress bar
-        print("coucou 1")
         while len(self.results) < self.parameters["GEN"]:
-            print("coucou 2")
-            time.sleep(0.05)
+            time.sleep(0.1)
             percent = int(len(self.results) / self.parameters["GEN"] * 100)
             self.progress.emit(percent)
+            if self.stop_flag:
+                break
 
 
 class GraphWidget(QWidget):
@@ -141,14 +150,26 @@ class MainWindow(QWidget):
         self.th2.progress.connect(self.update_babar)
 
         self.thread.start()
-        print("test 1")
         self.th2.start()
-        print("test 2")
         self.thread.quit()
-        print("test 3")
         self.th2.quit()
-        print("test 4")
 
+        self.prog_bar.setValue(100)
+
+    def stop_threads(self):
+        if hasattr(self, 'thread') and self.thread.isRunning():
+            self.thread.stop()
+            self.thread.quit()
+            self.thread.terminate()
+            self.thread.wait()
+
+        if hasattr(self, 'th2') and self.th2.isRunning():
+            self.th2.stop()
+            self.th2.quit()
+            self.th2.terminate()
+            self.th2.wait()
+        self.handle_simulation_result(None)
+        self.update_babar(0)
     def update_babar(self, percent):
         self.prog_bar.setValue(percent)
 
@@ -214,6 +235,9 @@ class MainWindow(QWidget):
 
         self.launch = QPushButton("Apply & Launch")
         self.launch.clicked.connect(self.launch_sim)
+        self.stop_button = QPushButton("Stop")
+        self.stop_button.clicked.connect(self.stop_threads)
+
 
 
         self.seed = QSpinBox(self)
@@ -283,6 +307,7 @@ class MainWindow(QWidget):
         ## elon musk
         lunch_box = QVBoxLayout()
         lunch_box.addWidget(self.launch)
+        lunch_box.addWidget(self.stop_button)
 
         # Create layouts
         hbox1 = QVBoxLayout()
