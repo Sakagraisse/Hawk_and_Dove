@@ -12,14 +12,30 @@ import pandas as pd
 from matplotlib.figure import Figure
 class handle_simulation(QThread):
     simulation = pyqtSignal(Figure)
-    def __init__(self, parameters):
+    def __init__(self, parameters, results):
         super().__init__()
         self.parameters = parameters
+        self.results = results
     def run(self):
         # Exécuter la première tâche
-        new_fig = sim.run_sim(self.parameters)
-
+        new_fig = sim.run_sim(self.parameters,self.results)
         self.simulation.emit(new_fig)
+
+class update_progress_bar(QThread):
+    progress = pyqtSignal(int)
+    def __init__(self, results, parameters):
+        super().__init__()
+        self.parameters = parameters
+        self.results = results
+    def run(self):
+        #check every 50ms the number of line or results and update the progress bar
+        print("coucou 1")
+        while len(self.results) < self.parameters["GEN"]:
+            print("coucou 2")
+            time.sleep(0.05)
+            percent = int(len(self.results) / self.parameters["GEN"] * 100)
+            self.progress.emit(percent)
+
 
 class GraphWidget(QWidget):
     def __init__(self):
@@ -118,17 +134,24 @@ class MainWindow(QWidget):
             self.parameters["IS_KIN_SELECT"] = False
 
 
-        self.thread = handle_simulation(self.parameters)
+        self.thread = handle_simulation(self.parameters,self.results)
         self.thread.simulation.connect(self.handle_simulation_result)
+
+        self.th2 = update_progress_bar(self.results, self.parameters)
+        self.th2.progress.connect(self.update_babar)
+
         self.thread.start()
+        print("test 1")
+        self.th2.start()
+        print("test 2")
         self.thread.quit()
+        print("test 3")
+        self.th2.quit()
+        print("test 4")
 
+    def update_babar(self, percent):
+        self.prog_bar.setValue(percent)
 
-        # new_canvas = FigureCanvas(self.fig)
-        # self.fig_box.removeWidget(self.image)
-        # self.fig_box.replaceWidget(self.canvas, new_canvas)
-        # self.canvas = new_canvas
-        # self.canvas.draw()
 
     def handle_simulation_result(self, new_fig):
         self.fig = new_fig

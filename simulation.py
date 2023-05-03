@@ -11,7 +11,7 @@ import pandas as pd
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
-def run_sim(params):
+def run_sim(params,results):
     # Set the desired seed for replicability of a random one if negative
     progress = 0
     if params["SEED"] < 0:
@@ -28,9 +28,9 @@ def run_sim(params):
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
 
     #create the dataframe to store the results
-    results = pd.DataFrame(columns=["generation", "total population",
-                                    "population increase %",
-                                    "proportion of dove", "proportion of hawk"])
+    # results = pd.DataFrame(columns=["generation", "total population",
+    #                                 "population increase %",
+    #                                 "proportion of dove", "proportion of hawk"])
 
 
     results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
