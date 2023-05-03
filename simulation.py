@@ -1,13 +1,12 @@
 ################
 #import libraries and dependencies
 ################
-from random import random, shuffle
+from random import random, shuffle , seed
 from numpy.random import normal
-from random import seed, shuffle
-import time
 import data_storage as ds
-import pandas as pd
+from collections import Counter
 
+import pandas as pd
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
@@ -97,13 +96,9 @@ class Player :
 # There is a number of individual set by : number_of_indiv
 # and the proportion of dove is set by : number_of_doves
 def create_initial_pop(number_of_indiv, number_of_doves):
-    initial_pop = []
     total_doves = int(round(number_of_doves * number_of_indiv,0))
-    for i in range(total_doves):
-        initial_pop.append(Player("dove"))
-    for j in range(number_of_indiv - total_doves):
-        initial_pop.append(Player("hawk"))
-    return initial_pop
+    # Utiliser une liste en compréhension
+    return [Player("dove") if i < total_doves else Player("hawk") for i in range(number_of_indiv)]
 
 ################
 # track the proportion
@@ -252,16 +247,15 @@ def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 # Study population
 ################
 # take the population and return the number of individual, the number of dove and the ratio
-def study_population_basic(pop_t):
-    dove_count = 0
-    for j in range(len(pop_t)):
-        if pop_t[j].type == "dove" : dove_count += 1
-    try:
-        year_t = [ len(pop_t) , dove_count , dove_count/len(pop_t), 1-dove_count/len(pop_t) ]
-    except:
-        year_t = [len(pop_t), dove_count, 0,0]
-    return year_t
 
+def study_population_basic(pop_t):
+    pop_counter = Counter(p.type for p in pop_t)
+    dove_count = pop_counter["dove"]
+    try:
+        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t)]
+    except:
+        year_t = [len(pop_t), dove_count, 0, 0]
+    return year_t
 
 ################
 # serial killer
