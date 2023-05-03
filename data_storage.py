@@ -1,16 +1,5 @@
 
 
-# def df_results():
-#     results = pd.DataFrame(columns=["generation","total population",
-#                                     "population increase %",
-#                                     "proportion of dove"])
-
-#parameters = ui.get_parameters()
-
-# def get_results():
-#     return results
-
-# liste has 3 arguments
 def add_line(liste,results):
     results.loc[len(results)] = [len(results), liste[0],liste[1], liste[2], liste[3]]
 
@@ -24,8 +13,11 @@ import matplotlib.pyplot as plt
 
 def get_plot_2(results, absciss="generation", ordinate="proportion of dove", type="line"):
     #ax = results.plot(x=absciss, y=ordinate, kind=type)
-    ax = results[["proportion of dove", "proportion of hawk"]].plot.area()
-    fig = ax.get_figure()
+    fig, axs = plt.subplots(2)
+
+    results[["proportion of dove", "proportion of hawk"]].plot.area(ax=axs[0])
+    results[['total population']].plot(ax=axs[1])
+    #fig = ax.get_figure()
     return fig
 
 #############################################

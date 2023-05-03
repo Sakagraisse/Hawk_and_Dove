@@ -1,0 +1,1 @@
+# revoir fonction kin_select et son activation dans "fight"

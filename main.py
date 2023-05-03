@@ -1,11 +1,18 @@
 import sys
 import os
 from PyQt6.QtWidgets import QRadioButton, QPushButton, QGroupBox, QHBoxLayout, \
-    QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox
+    QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar
+from PyQt6.QtCore import QTimer , QThread , pyqtSignal
 from PyQt6 import QtGui
 import simulation as sim
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib import pyplot as plt
+import time
+import pandas as pd
+
+
+
+
 class GraphWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -52,7 +59,13 @@ class MainWindow(QWidget):
         else:
             self.kin_selection = True
 
+
+
     def launch_sim(self):
+        self.prog_bar.setValue(0)
+        self.results = pd.DataFrame(columns=["generation", "total population",
+                                        "population increase %",
+                                        "proportion of dove", "proportion of hawk"])
         self.parameters["V"] = self.food.value()
         self.parameters["C"] = self.fight.value()
         self.parameters["INITIAL_POP"] = self.pop_ini.value()
@@ -108,7 +121,9 @@ class MainWindow(QWidget):
         self.groupbox_graph.update()
 
     def update_fight_range(self, food_value):
-        self.fight.setRange((food_value / 2) + 0.1, 50)
+        self.fight.setRange((food_value / 2) + 0.1, food_value)
+
+
 
     def initUI(self):
         # Get screen dimensions
@@ -116,6 +131,10 @@ class MainWindow(QWidget):
         screen_geo = screen.availableGeometry()
         screen_width = screen_geo.width()
         screen_height = screen_geo.height()
+
+        #create progress bar
+        self.prog_bar = QProgressBar(self)
+
         # Create checkboxes
         self.food = QDoubleSpinBox(self)
         self.food.setValue(10.0)
@@ -342,10 +361,14 @@ class MainWindow(QWidget):
         self.groupbox_graph.setContentsMargins(10, 10, 10, 10)
         self.groupbox_graph.setLayout(self.fig_box)
 
+        Partie_droite = QVBoxLayout()
+        #Partie_droite.addWidget(self.prog_bar)
+        Partie_droite.addWidget(self.groupbox_graph)
+
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(groupbox_parameters)
-        main_layout.addWidget(self.groupbox_graph)
+        main_layout.addLayout(Partie_droite)
 
 
         # Set the main layout

@@ -8,60 +8,59 @@ import time
 import data_storage as ds
 import pandas as pd
 
+#Main loop for simulation
+#Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
 def run_sim(params):
-    # retrieve parameters from user
+    # Set the desired seed for replicability of a random one if negative
+    progress = 0
     if params["SEED"] < 0:
         seed()
     else:
         seed(params["SEED"])
+
+    # set up the base payoffs of the hawk and dove game ( also base fitness in this case )
     payoffs = {"hawk / hawk": params["V"] / 2 - params["C"], "hawk / dove": params["V"],
                "dove/hawk": 0, "dove/dove": params["V"] / 2}
-    # create the initial population
+
+
+    #create the initial population
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
-    # create the dataframe to store the results
+
+    #create the dataframe to store the results
     results = pd.DataFrame(columns=["generation", "total population",
                                     "population increase %",
                                     "proportion of dove", "proportion of hawk"])
 
 
-    print('launching simulation')
     results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
-    tic = time.perf_counter()
-    for period in range(1, params["GEN"]):
+
+    # Main loop for simulation
+    for period in range(1, params["GEN"]+1):
+        progress = progress + period/params["GEN"]
+        #suffle for pairing
         shuffle(pop)
+        #pairing and pairwise payoff calculation
         fight(pop, params["V"] ,payoffs, params["IS_KIN_SELECT"])
+        #add malus for time to catch
         if params["IS_FOOD_SEARCH"]:
             food_search(pop,params["HAWK_MEAN"],
                         params["HAWK_SHAPE"],
                         params["DOVE_MEAN"],
                         params["DOVE_SHAPE"])
+
+        # Create the offspring according to the fitness of each individual
         pop = selection(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
+        # Remove excess individuals if needed
         pop = serial_killer(pop,params)
-
+        # store the new line of statistics 
+        # create stats
         pop_stats = study_population_basic(pop)
-
+        #store
         ds.add_line(pop_stats,results)
-
-
-    toc = time.perf_counter()
-    print(f"Simulation finished in {toc - tic:0.4f} seconds")
-    #ds.get_plot(results)
-    figurerrere = ds.get_plot_2(results)
-    #figurerrere.show()
-    return figurerrere
-
-
-#TODO : kin-selection (parental benefits / drawbacks)
-#TODO : search-and-catch
-
-################
-#get parameters and other variables
-################
-#parameters = ui.get_parameters()
-#payoffs = {"hawk / hawk" :parameters["V"]/2 - parameters["C"], "hawk / dove" : parameters["V"],
-           #"dove/hawk":0,"dove/dove" : parameters["V"]/2}
-
+    #generate the graph and return it
+    graph = ds.get_plot_2(results)
+    return graph
 
 ################
 #create the initial population
@@ -219,8 +218,12 @@ def kin_selection_HD (player_1: {Player}, player_2: {Player}, parameters):
 # if the individual is selected to produce an offspring, the the probability to produc an offspring of the othertype
 # is mutation_rate
 def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
+    #create the array to return
     final_array = []
+    # for each individual, we compute if it survives to the next generation
+    # if yes, compute if it produces an offspring
     for i in range(len(pop_t)):
+        # if the fitness is superior to 1
         if random() <= pop_t[i].fitness - 1 :
             test = random()
             if pop_t[i].type == "hawk":
@@ -241,7 +244,7 @@ def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
                     new_player = Player("dove")
                     new_player.add_genealogy(pop_t[i])
                     final_array.append(new_player)
-        if random() <= pop_t[i].fitness :
+        if random() <= pop_t[i].fitness:
             final_array.append(pop_t[i])
     return final_array
 
