@@ -9,9 +9,17 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib import pyplot as plt
 import time
 import pandas as pd
+from matplotlib.figure import Figure
+class handle_simulation(QThread):
+    simulation = pyqtSignal(Figure)
+    def __init__(self, parameters):
+        super().__init__()
+        self.parameters = parameters
+    def run(self):
+        # Exécuter la première tâche
+        new_fig = sim.run_sim(self.parameters)
 
-
-
+        self.simulation.emit(new_fig)
 
 class GraphWidget(QWidget):
     def __init__(self):
@@ -102,21 +110,34 @@ class MainWindow(QWidget):
             self.parameters["DOVE_SHAPE"] = self.std_dove.value()
         else:
             self.parameters["IS_FOOD_SEARCH"] = False
-        print(self.parameters)
+        #(self.parameters)
 
         if self.kin_selection:
             self.parameters["IS_KIN_SELECT"] = True
         else:
             self.parameters["IS_KIN_SELECT"] = False
 
-        new_fig = sim.run_sim(self.parameters)
-        new_canvas = FigureCanvas(new_fig)
+
+        self.thread = handle_simulation(self.parameters)
+        self.thread.simulation.connect(self.handle_simulation_result)
+        self.thread.start()
+        self.thread.quit()
+
+
+        # new_canvas = FigureCanvas(self.fig)
+        # self.fig_box.removeWidget(self.image)
+        # self.fig_box.replaceWidget(self.canvas, new_canvas)
+        # self.canvas = new_canvas
+        # self.canvas.draw()
+
+    def handle_simulation_result(self, new_fig):
+        self.fig = new_fig
+
+        new_canvas = FigureCanvas(self.fig)
         self.fig_box.removeWidget(self.image)
         self.fig_box.replaceWidget(self.canvas, new_canvas)
         self.canvas = new_canvas
-        self.fig = new_fig
         self.canvas.draw()
-
     def update_groupbox_graph(self):
         self.groupbox_graph.update()
 
@@ -214,7 +235,7 @@ class MainWindow(QWidget):
 
         #test graph
         # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
-        self.fig = plt.figure()
+        self.fig = None
         self.canvas = FigureCanvas(self.fig)
 
         # Get the absolute path to the directory containing the script
@@ -362,7 +383,7 @@ class MainWindow(QWidget):
         self.groupbox_graph.setLayout(self.fig_box)
 
         Partie_droite = QVBoxLayout()
-        #Partie_droite.addWidget(self.prog_bar)
+        Partie_droite.addWidget(self.prog_bar)
         Partie_droite.addWidget(self.groupbox_graph)
 
 
