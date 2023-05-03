@@ -49,7 +49,7 @@ def run_sim(params,results):
                         params["DOVE_SHAPE"])
 
         # Create the offspring according to the fitness of each individual
-        pop = selection(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
+        pop = selection2(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
         # Remove excess individuals if needed
         pop = serial_killer(pop,params)
         # store the new line of statistics 
@@ -210,38 +210,74 @@ def kin_selection_HD (player_1: {Player}, player_2: {Player}, parameters):
 ################
 # if the fitness is superior to 1, the individual has a probability of 1 - fitness to produce an offspring
 # if the fitness is inferior to 1, the individual has a probability of fitness survive to the next generation
-# if the individual is selected to produce an offspring, the the probability to produc an offspring of the othertype
+# if the individual is selected to produce an offspring,the probability to produce an offspring of the othertype
 # is mutation_rate
-def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
-    #create the array to return
+
+#deprecated, see selection2
+# def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
+#     #create the array to return
+#     final_array = []
+#     # for each individual, we compute if it survives to the next generation
+#     # if yes, compute if it produces an offspring
+#     for i in range(len(pop_t)):
+#         # if the fitness is superior to 1
+#         if random() <= pop_t[i].fitness - 1 :
+#             test = random()
+#             if pop_t[i].type == "hawk":
+#                 if test < hawk_to_dove:
+#                     new_player = Player("dove")
+#                     new_player.add_genealogy(pop_t[i])
+#                     final_array.append(new_player)
+#                 else:
+#                     new_player = Player("hawk")
+#                     new_player.add_genealogy(pop_t[i])
+#                     final_array.append(new_player)
+#             elif pop_t[i].type == "dove":
+#                 if test < dove_to_hawk:
+#                     new_player = Player("hawk")
+#                     new_player.add_genealogy(pop_t[i])
+#                     final_array.append(new_player)
+#                 else:
+#                     new_player = Player("dove")
+#                     new_player.add_genealogy(pop_t[i])
+#                     final_array.append(new_player)
+#         if random() <= pop_t[i].fitness:
+#             final_array.append(pop_t[i])
+#     return final_array
+
+#refactoring of selection : this time, if the fitness is superior to 1, the individual
+#survives for sure, and creates descendants surely for every floor(integer)-1
+#The decimal part can then be created or not
+#finally, we check mutation for each new descendant
+def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
     final_array = []
-    # for each individual, we compute if it survives to the next generation
-    # if yes, compute if it produces an offspring
-    for i in range(len(pop_t)):
-        # if the fitness is superior to 1
-        if random() <= pop_t[i].fitness - 1 :
-            test = random()
-            if pop_t[i].type == "hawk":
-                if test < hawk_to_dove:
-                    new_player = Player("dove")
-                    new_player.add_genealogy(pop_t[i])
-                    final_array.append(new_player)
-                else:
-                    new_player = Player("hawk")
-                    new_player.add_genealogy(pop_t[i])
-                    final_array.append(new_player)
-            elif pop_t[i].type == "dove":
-                if test < dove_to_hawk:
-                    new_player = Player("hawk")
-                    new_player.add_genealogy(pop_t[i])
-                    final_array.append(new_player)
-                else:
-                    new_player = Player("dove")
-                    new_player.add_genealogy(pop_t[i])
-                    final_array.append(new_player)
-        if random() <= pop_t[i].fitness:
-            final_array.append(pop_t[i])
+
+    for individual in pop_t:
+        descendants = [individual]
+        for i in range(0,int(individual.fitness) -1):
+            new_player = Player(individual.type)
+            new_player.add_genealogy(individual)
+            descendants.append(new_player)
+        if random() < (individual.fitness - int(individual.fitness)):
+            new_player = Player(individual.type)
+            new_player.add_genealogy(individual)
+            descendants.append(new_player)
+        #determine mutation
+        if descendants[0].type == "hawk" and hawk_to_dove >0:
+            for offspring in descendants[1:]:
+                if random() < hawk_to_dove:
+                    offspring.type = "dove"
+
+        if descendants[0].type == "dove" and dove_to_hawk > 0:
+            for offspring in descendants[1:]:
+                if random() < dove_to_hawk:
+                    offspring.type = "hawk"
+
+        final_array = final_array + descendants
+
     return final_array
+
+
 
 ################
 # Study population
