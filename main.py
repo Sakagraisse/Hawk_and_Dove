@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QRadioButton, QPushButton, QGroupBox, QHBoxLayout, \
     QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar
-from PyQt6.QtCore import QTimer , QThread , pyqtSignal
+from PyQt6.QtCore import QThread , pyqtSignal
 from PyQt6 import QtGui
 import simulation as sim
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
