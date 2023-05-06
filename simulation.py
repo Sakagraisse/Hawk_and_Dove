@@ -5,6 +5,7 @@ from random import random, shuffle , seed
 from numpy.random import normal
 import data_storage as ds
 from collections import Counter
+import concurrent.futures
 
 import pandas as pd
 #Main loop for simulation
@@ -123,45 +124,69 @@ def count_type(to_study, to_track):
 #   the other individuals are paired and the fitness is calculated with the payoffs
 # 2) the population is even
 #   in this case the individuals are paired and the fitness is calculated with the payoffs
-def fight(to_study,params_V,payoffs, kin :bool =  False):
-    if len(to_study) % 2 == 1:
-        to_study[-1].fitness = params_V
-        for i in range(0,len(to_study)-1,2):
-            if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
-                to_study[i].fitness = payoffs["hawk / hawk"]
-                to_study[i+1].fitness = payoffs["hawk / hawk"]
-                if kin: kin_selection_HH(to_study[i],to_study[i+1])
-            elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
-                to_study[i].fitness = payoffs["hawk / dove"]
-                to_study[i+1].fitness = payoffs["dove/hawk"]
-                if kin: kin_selection_HD(to_study[i], to_study[i + 1])
-            elif to_study[i].type == "dove" and to_study[i+1].type == "hawk":
-                to_study[i].fitness = payoffs["dove/hawk"]
-                to_study[i+1].fitness = payoffs["hawk / dove"]
-                if kin: kin_selection_HD(to_study[i+1], to_study[i])
-            else:
-                to_study[i].fitness = payoffs["dove/dove"]
-                to_study[i+1].fitness = payoffs["dove/dove"]
-    else:
-        for i in range(0,len(to_study),2):
-            if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
-                to_study[i].fitness = payoffs["hawk / hawk"]
-                to_study[i+1].fitness = payoffs["hawk / hawk"]
-                if kin: kin_selection_HH(to_study[i],to_study[i+1])
-            elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
-                to_study[i].fitness = payoffs["hawk / dove"]
-                to_study[i+1].fitness = payoffs["dove/hawk"]
-                if kin: kin_selection_HD(to_study[i], to_study[i + 1])
-            elif to_study[i].type == "dove" and to_study[i+1].type == "hawk":
-                to_study[i].fitness = payoffs["dove/hawk"]
-                to_study[i+1].fitness = payoffs["hawk / dove"]
-                if kin: kin_selection_HD(to_study[i + 1], to_study[i])
-            else:
-                to_study[i].fitness = payoffs["dove/dove"]
-                to_study[i+1].fitness = payoffs["dove/dove"]
 
+def update_fitness(pair, params_V, payoffs, kin=False):
+    i, j = pair
+    if i.type == "hawk" and j.type == "hawk":
+        i.fitness = payoffs["hawk / hawk"]
+        j.fitness = payoffs["hawk / hawk"]
+    elif i.type == "hawk" and j.type == "dove":
+        i.fitness = payoffs["hawk / dove"]
+        j.fitness = payoffs["dove/hawk"]
+    elif i.type == "dove" and j.type == "hawk":
+        i.fitness = payoffs["dove/hawk"]
+        j.fitness = payoffs["hawk / dove"]
+    else:
+        i.fitness = payoffs["dove/dove"]
+        j.fitness = payoffs["dove/dove"]
+
+def fight(to_study, params_V, payoffs, kin=False):
+    pairs = [(to_study[i], to_study[i + 1]) for i in range(0, len(to_study), 2)]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        executor.map(lambda pair: update_fitness(pair, params_V, payoffs, kin), pairs)
 
     return to_study
+#
+# def fight(to_study,params_V,payoffs, kin :bool =  False):
+#     if len(to_study) % 2 == 1:
+#         to_study[-1].fitness = params_V
+#         for i in range(0,len(to_study)-1,2):
+#             if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
+#                 to_study[i].fitness = payoffs["hawk / hawk"]
+#                 to_study[i+1].fitness = payoffs["hawk / hawk"]
+#                 if kin: kin_selection_HH(to_study[i],to_study[i+1])
+#             elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
+#                 to_study[i].fitness = payoffs["hawk / dove"]
+#                 to_study[i+1].fitness = payoffs["dove/hawk"]
+#                 if kin: kin_selection_HD(to_study[i], to_study[i + 1])
+#             elif to_study[i].type == "dove" and to_study[i+1].type == "hawk":
+#                 to_study[i].fitness = payoffs["dove/hawk"]
+#                 to_study[i+1].fitness = payoffs["hawk / dove"]
+#                 if kin: kin_selection_HD(to_study[i+1], to_study[i])
+#             else:
+#                 to_study[i].fitness = payoffs["dove/dove"]
+#                 to_study[i+1].fitness = payoffs["dove/dove"]
+#     else:
+#         for i in range(0,len(to_study),2):
+#             if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
+#                 to_study[i].fitness = payoffs["hawk / hawk"]
+#                 to_study[i+1].fitness = payoffs["hawk / hawk"]
+#                 if kin: kin_selection_HH(to_study[i],to_study[i+1])
+#             elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
+#                 to_study[i].fitness = payoffs["hawk / dove"]
+#                 to_study[i+1].fitness = payoffs["dove/hawk"]
+#                 if kin: kin_selection_HD(to_study[i], to_study[i + 1])
+#             elif to_study[i].type == "dove" and to_study[i+1].type == "hawk":
+#                 to_study[i].fitness = payoffs["dove/hawk"]
+#                 to_study[i+1].fitness = payoffs["hawk / dove"]
+#                 if kin: kin_selection_HD(to_study[i + 1], to_study[i])
+#             else:
+#                 to_study[i].fitness = payoffs["dove/dove"]
+#                 to_study[i+1].fitness = payoffs["dove/dove"]
+#
+#
+#     return to_study
 
 ################
 # implements a version of the model where each animal spends time, reducing fitness,
