@@ -10,6 +10,9 @@ from matplotlib import pyplot as plt
 import time
 import pandas as pd
 from matplotlib.figure import Figure
+
+#Implementing multithreading, initially to get a progress bar
+#Especially useful when doing a long / large simulation
 class handle_simulation(QThread):
     simulation = pyqtSignal(Figure)
     def __init__(self, parameters, results):
@@ -45,7 +48,7 @@ class update_progress_bar(QThread):
             if self.stop_flag:
                 break
 
-
+#Handles the graph part of the UI
 class GraphWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -58,6 +61,7 @@ class GraphWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(self.canvas)
 
+#Handles everything else
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -67,7 +71,7 @@ class MainWindow(QWidget):
         self.kin_selection = False
         self.parameters = {}
         self.initUI()
-
+#Various widget update methods
     def change_mutation(self):
         if self.mutation:
             self.mutation = False
@@ -93,7 +97,7 @@ class MainWindow(QWidget):
             self.kin_selection = True
 
 
-
+#Links the values input in the UI, to the backend of the program
     def launch_sim(self):
         self.prog_bar.setValue(0)
         self.results = pd.DataFrame(columns=["generation", "total population",
@@ -142,7 +146,7 @@ class MainWindow(QWidget):
         else:
             self.parameters["IS_KIN_SELECT"] = False
 
-
+        #Creates two threads ; one to run the simulation, one to continue the progress bar
         self.thread = handle_simulation(self.parameters,self.results)
         self.thread.simulation.connect(self.handle_simulation_result)
 
@@ -173,7 +177,7 @@ class MainWindow(QWidget):
     def update_babar(self, percent):
         self.prog_bar.setValue(percent)
 
-
+#Updates the graph after the simulation is done
     def handle_simulation_result(self, new_fig):
         self.fig = new_fig
 
@@ -189,7 +193,7 @@ class MainWindow(QWidget):
         self.fight.setRange((food_value / 2) + 0.1, food_value)
 
 
-
+#Creates and updates the UI
     def initUI(self):
         # Get screen dimensions
         screen = QtGui.QGuiApplication.primaryScreen()

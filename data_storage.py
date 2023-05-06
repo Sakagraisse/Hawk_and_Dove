@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 def add_line(liste,results):
     results.loc[len(results)] = [len(results), liste[0],liste[1], liste[2], liste[3]]
 
+
+#Deprecated
 def get_plot(results,absciss="generation",ordonate="proportion of dove", type = "line"):
     #results.plot(x = absciss, y = ordonate, kind = type)
     results[["proportion of dove", "proportion of hawk"]].plot.area()
