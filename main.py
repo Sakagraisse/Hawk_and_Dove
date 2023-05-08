@@ -100,6 +100,8 @@ class MainWindow(QWidget):
                                         "population increase %",
                                         "proportion of dove", "proportion of hawk"])
         self.parameters["V"] = self.food.value()
+        self.parameters["VHD"] = self.food_hawk_dove.value()
+        self.parameters["VDD"] = self.food_dove_dove.value()
         self.parameters["C"] = self.fight.value()
         self.parameters["INITIAL_POP"] = self.pop_ini.value()
         self.parameters["MAX_POP"] = self.pop_max.value()
@@ -206,6 +208,14 @@ class MainWindow(QWidget):
         self.food.setRange(0, 50)
         self.food.valueChanged.connect(self.update_fight_range)
 
+        self.food_hawk_dove = QDoubleSpinBox(self)
+        self.food_hawk_dove.setValue(10.0)
+        self.food.setRange(0,50)
+
+        self.food_dove_dove = QDoubleSpinBox(self)
+        self.food_dove_dove.setValue(10.0)
+        self.food.setRange(0,50)
+
         self.fight = QDoubleSpinBox(self)
         self.fight.setValue(5.1)
         self.update_fight_range(self.food.value())
@@ -270,7 +280,9 @@ class MainWindow(QWidget):
         food_label_std_h = QLabel('Std')
         food_label_std_d = QLabel('Std')
 
-        V = QLabel('Food Value:')
+        V = QLabel('Food(Hawk v. Hawk) Value:')
+        VHD = QLabel("Food(Hawk v. Dove) Value:")
+        VDD = QLabel("Food(Dove v. Dove) Value:")
         C = QLabel('Fight Cost:')
         N = QLabel('Initial Population:')
         M = QLabel('Maximum Population:')
@@ -313,6 +325,10 @@ class MainWindow(QWidget):
         hbox1 = QVBoxLayout()
         hbox1.addWidget(V)
         hbox1.addWidget(self.food)
+        hbox1.addWidget(VHD)
+        hbox1.addWidget(self.food_hawk_dove)
+        hbox1.addWidget(VDD)
+        hbox1.addWidget(self.food_dove_dove)
         hbox1.addWidget(C)
         hbox1.addWidget(self.fight)
         hbox1.addWidget(N)

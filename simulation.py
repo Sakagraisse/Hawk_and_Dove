@@ -19,8 +19,8 @@ def run_sim(params,results):
         seed(params["SEED"])
 
     # set up the base payoffs of the hawk and dove game ( also base fitness in this case )
-    payoffs = {"hawk / hawk": 1+params["V"] / 2 - params["C"], "hawk / dove": 1+params["V"],
-               "dove/hawk": 1, "dove/dove": 1+params["V"] / 2}
+    payoffs = {"hawk / hawk": 1+params["V"] / 2 - params["C"], "hawk / dove": 1+params["VHD"],
+               "dove/hawk": 1, "dove/dove": 1+params["VDD"] / 2}
 
 
     #create the initial population
