@@ -1,7 +1,8 @@
 import sys
 import os
 from PyQt6.QtWidgets import QRadioButton, QPushButton, QGroupBox, QHBoxLayout, \
-    QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar
+    QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar, \
+    QGridLayout
 from PyQt6.QtCore import QThread , pyqtSignal
 from PyQt6 import QtGui
 import simulation as sim
@@ -99,10 +100,14 @@ class MainWindow(QWidget):
         self.results = pd.DataFrame(columns=["generation", "total population",
                                         "population increase %",
                                         "proportion of dove", "proportion of hawk"])
-        self.parameters["V"] = self.food.value()
-        self.parameters["VHD"] = self.food_hawk_dove.value()
-        self.parameters["VDD"] = self.food_dove_dove.value()
-        self.parameters["C"] = self.fight.value()
+        self.parameters["VHH"] = self.v_HH.value()
+        self.parameters["VHD"] = self.v_HD.value()
+        self.parameters["VDH"] = self.v_DH.value()
+        self.parameters["VDD"] = self.v_DD.value()
+        self.parameters["CHH"] = self.c_HH.value()
+        self.parameters["CHD"] = self.c_HD.value()
+        self.parameters["CDH"] = self.c_DH.value()
+        self.parameters["CDD"] = self.c_DD.value()
         self.parameters["INITIAL_POP"] = self.pop_ini.value()
         self.parameters["MAX_POP"] = self.pop_max.value()
         self.parameters["INITIAL_DOVE"] = self.pop_dove.value() / 100
@@ -203,22 +208,42 @@ class MainWindow(QWidget):
         self.prog_bar = QProgressBar(self)
 
         # Create checkboxes
-        self.food = QDoubleSpinBox(self)
-        self.food.setValue(10.0)
-        self.food.setRange(0, 50)
-        self.food.valueChanged.connect(self.update_fight_range)
+        # self.food = QDoubleSpinBox(self)
+        # self.food.setValue(10.0)
+        # self.food.setRange(0, 50)
+        # self.food.valueChanged.connect(self.update_fight_range)
+        #
+        # self.food_hawk_dove = QDoubleSpinBox(self)
+        # self.food_hawk_dove.setValue(10.0)
+        # self.food.setRange(0,50)
+        #
+        # self.food_dove_dove = QDoubleSpinBox(self)
+        # self.food_dove_dove.setValue(10.0)
+        # self.food.setRange(0,50)
+        #
+        # self.fight = QDoubleSpinBox(self)
+        # self.fight.setValue(5.1)
+        # self.update_fight_range(self.food.value())
 
-        self.food_hawk_dove = QDoubleSpinBox(self)
-        self.food_hawk_dove.setValue(10.0)
-        self.food.setRange(0,50)
+        matrix_v_grid = QGridLayout()
+        self.v_HH = QDoubleSpinBox(self)
+        matrix_v_grid.addWidget(self.v_HH,0,0)
+        self.v_HD = QDoubleSpinBox(self)
+        matrix_v_grid.addWidget(self.v_HD,0,1)
+        self.v_DH = QDoubleSpinBox(self)
+        matrix_v_grid.addWidget(self.v_DH,1,0)
+        self.v_DD = QDoubleSpinBox(self)
+        matrix_v_grid.addWidget(self.v_DD,1,1)
 
-        self.food_dove_dove = QDoubleSpinBox(self)
-        self.food_dove_dove.setValue(10.0)
-        self.food.setRange(0,50)
-
-        self.fight = QDoubleSpinBox(self)
-        self.fight.setValue(5.1)
-        self.update_fight_range(self.food.value())
+        matrix_c_grid = QGridLayout()
+        self.c_HH = QDoubleSpinBox(self)
+        matrix_c_grid.addWidget(self.c_HH,0,0)
+        self.c_HD = QDoubleSpinBox(self)
+        matrix_c_grid.addWidget(self.c_HD,0,1)
+        self.c_DH = QDoubleSpinBox(self)
+        matrix_c_grid.addWidget(self.c_DH,1,0)
+        self.c_DD = QDoubleSpinBox(self)
+        matrix_c_grid.addWidget(self.c_DD,1,1)
 
         self.pop_ini = QSpinBox(self)
         self.pop_ini.setRange(0, 10000)
@@ -280,10 +305,10 @@ class MainWindow(QWidget):
         food_label_std_h = QLabel('Std')
         food_label_std_d = QLabel('Std')
 
-        V = QLabel('Food(Hawk v. Hawk) Value:')
-        VHD = QLabel("Food(Hawk v. Dove) Value:")
-        VDD = QLabel("Food(Dove v. Dove) Value:")
-        C = QLabel('Fight Cost:')
+        # V = QLabel('Food(Hawk v. Hawk) Value:')
+        # VHD = QLabel("Food(Hawk v. Dove) Value:")
+        # VDD = QLabel("Food(Dove v. Dove) Value:")
+        # C = QLabel('Fight Cost:')
         N = QLabel('Initial Population:')
         M = QLabel('Maximum Population:')
         D = QLabel('Initial Dove Fraction:')
@@ -323,15 +348,17 @@ class MainWindow(QWidget):
 
         # Create layouts
         hbox1 = QVBoxLayout()
-        hbox1.addWidget(V)
-        hbox1.addWidget(self.food)
-        hbox1.addWidget(VHD)
-        hbox1.addWidget(self.food_hawk_dove)
-        hbox1.addWidget(VDD)
-        hbox1.addWidget(self.food_dove_dove)
-        hbox1.addWidget(C)
-        hbox1.addWidget(self.fight)
-        hbox1.addWidget(N)
+        hbox1.addLayout(matrix_v_grid)
+        hbox1.addLayout(matrix_c_grid)
+        # hbox1.addWidget(V)
+        # hbox1.addWidget(self.food)
+        # hbox1.addWidget(VHD)
+        # hbox1.addWidget(self.food_hawk_dove)
+        # hbox1.addWidget(VDD)
+        # hbox1.addWidget(self.food_dove_dove)
+        # hbox1.addWidget(C)
+        # hbox1.addWidget(self.fight)
+        # hbox1.addWidget(N)
         hbox1.addWidget(self.pop_ini)
         hbox1.addWidget(M)
         hbox1.addWidget(self.pop_max)
@@ -395,6 +422,11 @@ class MainWindow(QWidget):
         groupbox1.setContentsMargins(10, 10, 10, 10)
         groupbox1.setLayout(hbox1)
 
+        matrix_v_box = QGroupBox("V values",self)
+        matrix_v_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        #matrix_v_box.setContentsMargins(10,10,10,10)
+        matrix_v_box.setLayout(matrix_v_grid)
+
         groupbox_limit_pop = QGroupBox('Limitation of population', self)
         groupbox_limit_pop.setCheckable(True)
         groupbox_limit_pop.setChecked(self.limit_pop)
@@ -452,8 +484,8 @@ class MainWindow(QWidget):
 
 
         main_layout = QHBoxLayout()
-        main_layout.addWidget(groupbox_parameters)
-        main_layout.addLayout(Partie_droite)
+        main_layout.addWidget(groupbox_parameters,7)
+        main_layout.addLayout(Partie_droite,3)
 
 
         # Set the main layout
