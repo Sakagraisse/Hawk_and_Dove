@@ -100,14 +100,11 @@ class MainWindow(QWidget):
         self.results = pd.DataFrame(columns=["generation", "total population",
                                         "population increase %",
                                         "proportion of dove", "proportion of hawk"])
-        self.parameters["VHH"] = self.v_HH.value()
-        self.parameters["VHD"] = self.v_HD.value()
-        self.parameters["VDH"] = self.v_DH.value()
-        self.parameters["VDD"] = self.v_DD.value()
-        self.parameters["CHH"] = self.c_HH.value()
-        self.parameters["CHD"] = self.c_HD.value()
-        self.parameters["CDH"] = self.c_DH.value()
-        self.parameters["CDD"] = self.c_DD.value()
+        self.parameters["PHH"] = self.p_HH.value()
+        self.parameters["PHD"] = self.p_HD.value()
+        self.parameters["PDH"] = self.p_DH.value()
+        self.parameters["PDD"] = self.p_DD.value()
+        self.parameters["V_DEF"] = self.v_default.value()
         self.parameters["INITIAL_POP"] = self.pop_ini.value()
         self.parameters["MAX_POP"] = self.pop_max.value()
         self.parameters["INITIAL_DOVE"] = self.pop_dove.value() / 100
@@ -162,6 +159,7 @@ class MainWindow(QWidget):
         self.th2.quit()
 
         self.prog_bar.setValue(100)
+        self.prog_bar.update()
 
     def stop_threads(self):
         if hasattr(self, 'thread') and self.thread.isRunning():
@@ -193,7 +191,7 @@ class MainWindow(QWidget):
         self.groupbox_graph.update()
 
     def update_fight_range(self, food_value):
-        self.fight.setRange((food_value / 2) + 0.1, food_value)
+        self.fight.setRange((food_value / 2) + 0.1, 1000)
 
 
 
@@ -207,43 +205,30 @@ class MainWindow(QWidget):
         #create progress bar
         self.prog_bar = QProgressBar(self)
 
-        # Create checkboxes
-        # self.food = QDoubleSpinBox(self)
-        # self.food.setValue(10.0)
-        # self.food.setRange(0, 50)
-        # self.food.valueChanged.connect(self.update_fight_range)
-        #
-        # self.food_hawk_dove = QDoubleSpinBox(self)
-        # self.food_hawk_dove.setValue(10.0)
-        # self.food.setRange(0,50)
-        #
-        # self.food_dove_dove = QDoubleSpinBox(self)
-        # self.food_dove_dove.setValue(10.0)
-        # self.food.setRange(0,50)
-        #
-        # self.fight = QDoubleSpinBox(self)
-        # self.fight.setValue(5.1)
-        # self.update_fight_range(self.food.value())
-
         matrix_v_grid = QGridLayout()
-        self.v_HH = QDoubleSpinBox(self)
-        matrix_v_grid.addWidget(self.v_HH,0,0)
-        self.v_HD = QDoubleSpinBox(self)
-        matrix_v_grid.addWidget(self.v_HD,0,1)
-        self.v_DH = QDoubleSpinBox(self)
-        matrix_v_grid.addWidget(self.v_DH,1,0)
-        self.v_DD = QDoubleSpinBox(self)
-        matrix_v_grid.addWidget(self.v_DD,1,1)
-
-        matrix_c_grid = QGridLayout()
-        self.c_HH = QDoubleSpinBox(self)
-        matrix_c_grid.addWidget(self.c_HH,0,0)
-        self.c_HD = QDoubleSpinBox(self)
-        matrix_c_grid.addWidget(self.c_HD,0,1)
-        self.c_DH = QDoubleSpinBox(self)
-        matrix_c_grid.addWidget(self.c_DH,1,0)
-        self.c_DD = QDoubleSpinBox(self)
-        matrix_c_grid.addWidget(self.c_DD,1,1)
+        self.p_HH = QDoubleSpinBox(self)
+        self.p_HH.setValue(-1)
+        self.p_HH.setRange(-50,100)
+        matrix_v_grid.addWidget(self.p_HH,1,1)
+        self.p_HD = QDoubleSpinBox(self)
+        self.p_HD.setValue(2)
+        self.p_HD.setRange(-50,100)
+        matrix_v_grid.addWidget(self.p_HD,1,2)
+        self.p_DH = QDoubleSpinBox(self)
+        self.p_DH.setValue(0)
+        self.p_DH.setRange(-50,100)
+        matrix_v_grid.addWidget(self.p_DH,2,1)
+        self.p_DD = QDoubleSpinBox(self)
+        self.p_DD.setValue(1)
+        self.p_DD.setRange(-50,100)
+        matrix_v_grid.addWidget(self.p_DD,2,2)
+        matrix_v_grid.addWidget(QLabel("Payoff Matrix"), 0,0)
+        matrix_v_grid.addWidget(QLabel("Hawk"),0,1)
+        matrix_v_grid.addWidget(QLabel("Hawk"),1,0)
+        matrix_v_grid.addWidget(QLabel("Dove"),0,2)
+        matrix_v_grid.addWidget(QLabel("Dove"),2,0)
+        self.v_default = QDoubleSpinBox(self)
+        v_def = QLabel("Default Food Value")
 
         self.pop_ini = QSpinBox(self)
         self.pop_ini.setRange(0, 10000)
@@ -349,7 +334,6 @@ class MainWindow(QWidget):
         # Create layouts
         hbox1 = QVBoxLayout()
         hbox1.addLayout(matrix_v_grid)
-        hbox1.addLayout(matrix_c_grid)
         # hbox1.addWidget(V)
         # hbox1.addWidget(self.food)
         # hbox1.addWidget(VHD)
@@ -358,7 +342,9 @@ class MainWindow(QWidget):
         # hbox1.addWidget(self.food_dove_dove)
         # hbox1.addWidget(C)
         # hbox1.addWidget(self.fight)
-        # hbox1.addWidget(N)
+        hbox1.addWidget(v_def)
+        hbox1.addWidget(self.v_default)
+        hbox1.addWidget(N)
         hbox1.addWidget(self.pop_ini)
         hbox1.addWidget(M)
         hbox1.addWidget(self.pop_max)
@@ -422,10 +408,6 @@ class MainWindow(QWidget):
         groupbox1.setContentsMargins(10, 10, 10, 10)
         groupbox1.setLayout(hbox1)
 
-        matrix_v_box = QGroupBox("V values",self)
-        matrix_v_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        #matrix_v_box.setContentsMargins(10,10,10,10)
-        matrix_v_box.setLayout(matrix_v_grid)
 
         groupbox_limit_pop = QGroupBox('Limitation of population', self)
         groupbox_limit_pop.setCheckable(True)
@@ -484,8 +466,8 @@ class MainWindow(QWidget):
 
 
         main_layout = QHBoxLayout()
-        main_layout.addWidget(groupbox_parameters,7)
-        main_layout.addLayout(Partie_droite,3)
+        main_layout.addWidget(groupbox_parameters)
+        main_layout.addLayout(Partie_droite)
 
 
         # Set the main layout

@@ -21,19 +21,14 @@ def run_sim(params,results):
     # set up the base payoffs of the hawk and dove game ( also base fitness in this case )
     # payoffs = {"hawk / hawk": 1+params["V"] / 2 - params["C"], "hawk / dove": 1+params["VHD"],
     #            "dove/hawk": 1, "dove/dove": 1+params["VDD"] / 2}
-    payoffs = {"hawk / hawk": 1 + params["VHH"] - params["CHH"], "hawk / dove": 1 + params["VHD"] - params["CHD"],
-               "dove/hawk": 1 + params["VDH"] - params["CDH"], "dove/dove": 1+params["VDD"] - params["CDD"]}
+    payoffs = {"hawk / hawk": params["PHH"], "hawk / dove": params["PHD"],
+               "dove/hawk": params["PDH"], "dove/dove": params["PDD"]}
 
 
     #create the initial population
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
 
-    #create the dataframe to store the results
-    # results = pd.DataFrame(columns=["generation", "total population",
-    #                                 "population increase %",
-    #                                 "proportion of dove", "proportion of hawk"])
-
-
+    #create the initial line of statistics
     results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
 
     # Main loop for simulation
@@ -42,7 +37,7 @@ def run_sim(params,results):
         #suffle for pairing
         shuffle(pop)
         #pairing and pairwise payoff calculation
-        fight(pop, params["V"] ,payoffs, params["IS_KIN_SELECT"])
+        pop = fight(pop, params["V_DEF"] ,payoffs, params["IS_KIN_SELECT"])
         #add malus for time to catch
         if params["IS_FOOD_SEARCH"]:
             food_search(pop,params["HAWK_MEAN"],
@@ -57,6 +52,7 @@ def run_sim(params,results):
         # store the new line of statistics 
         # create stats
         pop_stats = study_population_basic(pop)
+        print(pop_stats)
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
@@ -125,12 +121,17 @@ def count_type(to_study, to_track):
 #   the other individuals are paired and the fitness is calculated with the payoffs
 # 2) the population is even
 #   in this case the individuals are paired and the fitness is calculated with the payoffs
-def fight(to_study,params_V,payoffs, kin :bool =  False):
-    if len(to_study) % 2 == 1:
-        to_study[-1].fitness = params_V
+def fight(to_study,default,payoffs, kin :bool =  False):
+    print(len(to_study))
+    if (len(to_study) % 2) == 1:
+        print("odd")
+        to_study[-1].fitness = default
         for i in range(0,len(to_study)-1,2):
+            print("enter for")
             if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
+                print(to_study[i].fitness)
                 to_study[i].fitness = payoffs["hawk / hawk"]
+                print(to_study[i].fitness)
                 to_study[i+1].fitness = payoffs["hawk / hawk"]
                 if kin: kin_selection_HH(to_study[i],to_study[i+1])
             elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
@@ -145,10 +146,13 @@ def fight(to_study,params_V,payoffs, kin :bool =  False):
                 to_study[i].fitness = payoffs["dove/dove"]
                 to_study[i+1].fitness = payoffs["dove/dove"]
     else:
+        print("even")
         for i in range(0,len(to_study),2):
             if to_study[i].type == "hawk" and to_study[i+1].type == "hawk":
                 to_study[i].fitness = payoffs["hawk / hawk"]
+
                 to_study[i+1].fitness = payoffs["hawk / hawk"]
+
                 if kin: kin_selection_HH(to_study[i],to_study[i+1])
             elif to_study[i].type == "hawk" and to_study[i+1].type == "dove":
                 to_study[i].fitness = payoffs["hawk / dove"]
@@ -161,7 +165,6 @@ def fight(to_study,params_V,payoffs, kin :bool =  False):
             else:
                 to_study[i].fitness = payoffs["dove/dove"]
                 to_study[i+1].fitness = payoffs["dove/dove"]
-
 
     return to_study
 
@@ -253,27 +256,28 @@ def kin_selection_HD (player_1: {Player}, player_2: {Player}, parameters):
 #finally, we check mutation for each new descendant
 def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
     final_array = []
-
     for individual in pop_t:
-        descendants = [individual]
-        for i in range(0,int(individual.fitness) -1):
+        descendants = []
+        for i in range(1,int(individual.fitness) -1):
             new_player = Player(individual.type)
             new_player.add_genealogy(individual)
             descendants.append(new_player)
-        if random() < (individual.fitness - int(individual.fitness)):
-            new_player = Player(individual.type)
-            new_player.add_genealogy(individual)
-            descendants.append(new_player)
+
         #determine mutation
-        if descendants[0].type == "hawk" and hawk_to_dove >0:
-            for offspring in descendants[1:]:
+        if individual.type == "hawk" and hawk_to_dove >0:
+            for offspring in descendants:
                 if random() < hawk_to_dove:
                     offspring.type = "dove"
 
-        if descendants[0].type == "dove" and dove_to_hawk > 0:
-            for offspring in descendants[1:]:
+        if individual.type == "dove" and dove_to_hawk > 0:
+            for offspring in descendants:
                 if random() < dove_to_hawk:
                     offspring.type = "hawk"
+
+        if individual.fitness - int(individual.fitness) == 0 and individual.fitness > 0:
+            descendants.append(individual)
+        elif random() < (individual.fitness - int(individual.fitness)):
+            descendants.append(individual)
 
         final_array = final_array + descendants
 
