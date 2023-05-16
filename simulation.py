@@ -21,9 +21,7 @@ class Player :
 
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
-def mean_expec(expectations):
-    """This function calculates the mean of the life expectancy"""
-    return sum(expectations.values())/Player.ID
+
 def run_sim(params,results):
     """This function handles the simulation"""
     # Set the desired seed for replicability of a random one if negative
@@ -42,11 +40,9 @@ def run_sim(params,results):
 
     #create the initial population
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
-    life_expectancy = {}
-    for individual in pop:
-        life_expectancy[individual.ID] = 0
+
     #create the initial line of statistics
-    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"],mean_expec(life_expectancy)]
+    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
 
     # Main loop for simulation
     for period in range(1, params["GEN"]+1):
@@ -66,8 +62,7 @@ def run_sim(params,results):
         pop = purge(pop,params)
         # store the new line of statistics 
         # create stats
-        update_life_expectancy(life_expectancy,pop)
-        pop_stats = study_population_basic(pop, mean_expec(life_expectancy))
+        pop_stats = study_population_basic(pop)
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
@@ -87,11 +82,7 @@ def create_initial_pop(number_of_indiv, number_of_doves):
     # Utiliser une liste en compréhension
     return [Player("dove") if i < total_doves else Player("hawk") for i in range(number_of_indiv)]
 
-def update_life_expectancy(previous,pop):
-    """This function updates the life expectancy dictionary"""
-    for individual in pop:
-        if individual.ID in previous.keys() : previous[individual.ID] += 1
-        else : previous[individual.ID] = 1
+
 ################
 # Calculate the fitness of each individual
 ################
@@ -198,12 +189,12 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 ################
 # take the population and return the number of individual, the number of dove and the ratio
 
-def study_population_basic(pop_t,expec_mean):
+def study_population_basic(pop_t):
     """This function handles the various statistics we track, and returns a list of them"""
     pop_counter = Counter(p.type for p in pop_t)
     dove_count = pop_counter["dove"]
     try:
-        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t),expec_mean]
+        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t)]
     except:
         year_t = [len(pop_t), dove_count, 0, 0]
     return year_t
