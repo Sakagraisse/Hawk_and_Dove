@@ -19,6 +19,8 @@ class Player :
         self.fitness = 1
 
 
+def calc_exp(dict):
+    return sum(dict.values())/Player.ID
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
@@ -41,8 +43,11 @@ def run_sim(params,results):
     #create the initial population
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
 
+    expectancy = {}
+    for individual in pop :
+        expectancy[individual.ID] = 0
     #create the initial line of statistics
-    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
+    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"], 0]
 
     # Main loop for simulation
     for period in range(1, params["GEN"]+1):
@@ -62,12 +67,19 @@ def run_sim(params,results):
         pop = purge(pop,params)
         # store the new line of statistics 
         # create stats
-        pop_stats = study_population_basic(pop)
+        update_expectancy(pop,expectancy)
+        pop_stats = study_population_basic(pop, calc_exp(expectancy))
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
     graph = ds.get_plot_2(results)
     return graph
+
+
+def update_expectancy(data,exp):
+    for individual in data :
+        if individual.ID in exp.keys() : exp[individual.ID] += 1
+        else : exp[individual.ID] = 1
 
 
 ################
@@ -189,14 +201,14 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 ################
 # take the population and return the number of individual, the number of dove and the ratio
 
-def study_population_basic(pop_t):
+def study_population_basic(pop_t, exp):
     """This function handles the various statistics we track, and returns a list of them"""
     pop_counter = Counter(p.type for p in pop_t)
     dove_count = pop_counter["dove"]
     try:
-        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t)]
+        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp]
     except:
-        year_t = [len(pop_t), dove_count, 0, 0]
+        year_t = [len(pop_t), dove_count, 0, 0, exp]
     return year_t
 
 ################
