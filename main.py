@@ -174,6 +174,12 @@ class MainWindow(QWidget):
     def update_fight_range(self, food_value):
         self.fight.setRange((food_value / 2) + 0.1, 1000)
 
+    def change_to_graph(self):
+        pass
+
+    def change_to_default(self):
+        pass
+
 
 
     def initUI(self):
@@ -282,14 +288,21 @@ class MainWindow(QWidget):
         D = QLabel('Initial Dove Fraction:')
         G = QLabel('Simulation Length:')
 
-        ## kin selection
-        kin_select_label = QLabel('Work in progress')
-
         #test graph
         # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
         self.fig = None
         self.canvas = FigureCanvas(self.fig)
 
+        self.switch_graph = QRadioButton("Graph",self)
+        self.switch_default = QRadioButton("Instructions",self)
+        self.switch_default.setChecked(True)
+        switch_group = QButtonGroup()
+        switch_group.addButton(self.switch_graph)
+        switch_group.addButton(self.switch_default)
+        switch_group.setExclusive(True)
+
+        self.switch_graph.clicked.connect(self.change_to_graph)
+        self.switch_default.clicked.connect(self.change_to_default)
         # Get the absolute path to the directory containing the script
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -430,6 +443,8 @@ class MainWindow(QWidget):
 
         Partie_droite = QVBoxLayout()
         Partie_droite.addWidget(self.prog_bar)
+        Partie_droite.addWidget(self.switch_default)
+        Partie_droite.addWidget(self.switch_graph)
         Partie_droite.addWidget(self.groupbox_graph)
 
 
