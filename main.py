@@ -11,22 +11,17 @@ from matplotlib import pyplot as plt
 import time
 import pandas as pd
 from matplotlib.figure import Figure
+
+
 class handle_simulation(QThread):
     simulation = pyqtSignal(Figure)
     def __init__(self, parameters, results):
         super().__init__()
         self.parameters = parameters
         self.results = results
-        self.stop_flag = False
-
-    def stop(self):
-        self.stop_flag = True
     def run(self):
-        # Exécuter la première tâche
         new_fig = sim.run_sim(self.parameters,self.results)
         self.simulation.emit(new_fig)
-        if self.stop_flag:
-            return None
 
 class update_progress_bar(QThread):
     progress = pyqtSignal(int)
@@ -34,30 +29,16 @@ class update_progress_bar(QThread):
         super().__init__()
         self.parameters = parameters
         self.results = results
-        self.stop_flag = False
-    def stop(self):
-        self.stop_flag = True
     def run(self):
-        #check every 50ms the number of line or results and update the progress bar
+        #check every 100ms the number of line or results and update the progress bar
         while len(self.results) < self.parameters["GEN"]:
             time.sleep(0.1)
             percent = int(len(self.results) / self.parameters["GEN"] * 100)
             self.progress.emit(percent)
-            if self.stop_flag:
-                break
 
 
-class GraphWidget(QWidget):
-    def __init__(self):
-        super().__init__()
 
-        # Create a matplotlib figure and canvas
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
 
-        # Set up the layout
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.canvas)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -149,15 +130,13 @@ class MainWindow(QWidget):
 
 
         self.thread = handle_simulation(self.parameters,self.results)
-        self.thread.simulation.connect(self.handle_simulation_result)
-
         self.th2 = update_progress_bar(self.results, self.parameters)
-        self.th2.progress.connect(self.update_babar)
 
         self.thread.start()
         self.th2.start()
-        self.thread.quit()
-        self.th2.quit()
+
+        self.th2.progress.connect(self.update_babar)
+        self.thread.simulation.connect(self.handle_simulation_result)
 
         self.prog_bar.setValue(100)
         self.prog_bar.update()
@@ -178,6 +157,7 @@ class MainWindow(QWidget):
         self.update_babar(0)
     def update_babar(self, percent):
         self.prog_bar.setValue(percent)
+        self.prog_bar.update()
 
 
     def handle_simulation_result(self, new_fig):
