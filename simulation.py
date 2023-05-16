@@ -179,19 +179,6 @@ def kin_selection_HH(player_1 :{Player},player_2 : {Player},parameters):
         player_1.fitness += parameters["C"]/4
         player_2.fitness += parameters["C"]/4
 
-def kin_selection_HD (player_1: {Player}, player_2: {Player}, parameters):
-    if player_1.genealogy[1] == player_2.genealogy[1] or player_1.genealogy[0] == player_2.genealogy[1] \
-            or player_1.genealogy[1] == player_2.genealogy[0]:
-        player_1.fitness -= parameters["C"]/4
-        player_2.fitness += parameters["C"]/4
-    elif player_1.genealogy[0] == player_2.genealogy[2] or player_1.genealogy[2] == player_2.genealogy[0]:
-        player_1.fitness -= parameters["C"]/8
-        player_2.fitness += parameters["C"]/8
-
-
-
-
-
 ################
 # Compute the next generation of the population
 ################

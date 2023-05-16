@@ -396,8 +396,6 @@ class MainWindow(QWidget):
         food_search_box.addLayout(food_search_dove_box)
         food_search_box.addLayout(food_search_hawk_box)
 
-        kin_selection_box = QVBoxLayout()
-        kin_selection_box.addWidget(kin_select_label)
 
         # Create group boxes
         groupbox1 = QGroupBox('General settings', self)
@@ -427,12 +425,6 @@ class MainWindow(QWidget):
         groupbox_food_search.setLayout(food_search_box)
         groupbox_food_search.clicked.connect(self.change_food_search)
 
-        groupbox_kin = QGroupBox('Kin Selection', self)
-        groupbox_kin.setCheckable(True)
-        groupbox_kin.setChecked(self.kin_selection)
-        groupbox_kin.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        groupbox_kin.setLayout(kin_selection_box)
-        groupbox_kin.clicked.connect(self.change_kin)
 
         groupbox_lunch_box = QGroupBox('Launch', self)
         groupbox_lunch_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
@@ -444,7 +436,6 @@ class MainWindow(QWidget):
         vbox.addWidget(groupbox_limit_pop)
         vbox.addWidget(groupbox_mutation)
         vbox.addWidget(groupbox_food_search)
-        vbox.addWidget(groupbox_kin)
         vbox.addWidget(groupbox_lunch_box)
 
         groupbox_parameters = QGroupBox('Parameters', self)
