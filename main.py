@@ -80,7 +80,7 @@ class MainWindow(QWidget):
         self.prog_bar.setValue(0)
         self.results = pd.DataFrame(columns=["generation", "total population",
                                         "population increase %",
-                                        "proportion of dove", "proportion of hawk"])
+                                        "proportion of dove", "proportion of hawk", "avg life expectancy"])
         self.parameters["PHH"] = self.p_HH.value()
         self.parameters["PHD"] = self.p_HD.value()
         self.parameters["PDH"] = self.p_DH.value()
