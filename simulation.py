@@ -242,26 +242,29 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
         descendants = []
         #for some reason, a fitness of 1 is an edge-case scenario
         if individual.fitness > 1:
-            for i in range(0,int(individual.fitness) -1):
-                new_player = Player(individual.type)
-                new_player.add_genealogy(individual)
-                descendants.append(new_player)
-
-            #determine mutation
-            if individual.type == "hawk" and hawk_to_dove >0 and len(descendants) > 0:
-                for offspring in descendants:
-                    if random() < hawk_to_dove:
-                        offspring.type = "dove"
-
-            if individual.type == "dove" and dove_to_hawk > 0 and len(descendants) > 0:
-                for offspring in descendants:
-                    if random() < dove_to_hawk:
-                        offspring.type = "hawk"
-        #if the fitness is an integer bigger than 0, the individual survives for sure
-        if individual.fitness - int(individual.fitness) == 0 and individual.fitness > 0:
             descendants.append(individual)
-        elif random() < (individual.fitness - int(individual.fitness)):
+            residual_fitness = individual.fitness - 1
+            for i in range(0,int(residual_fitness)):
+                if individual.type == "hawk":
+                    if random() < hawk_to_dove : descendants.append(Player("dove"))
+                    else: descendants.append(Player("hawk"))
+                else:
+                    if random() < dove_to_hawk: descendants.append(Player("hawk"))
+                    else: descendants.append(Player("dove"))
+
+            if residual_fitness < 1 and random() < residual_fitness :
+                if individual.type == "hawk":
+                    if random() < hawk_to_dove : descendants.append(Player("dove"))
+                    else: descendants.append(Player("hawk"))
+                else:
+                    if random() < dove_to_hawk : descendants.append(Player("hawk"))
+                    else: descendants.append(Player("dove"))
+
+        elif individual.fitness == 1 :
             descendants.append(individual)
+
+        else:
+            if random() < individual.fitness : descendants.append(individual)
 
         final_array = final_array + descendants
 
