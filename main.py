@@ -167,7 +167,8 @@ class MainWindow(QWidget):
         self.fig_box.removeWidget(self.image)
         self.fig_box.replaceWidget(self.canvas, new_canvas)
         self.canvas = new_canvas
-        self.canvas.draw()
+        self.switch_graph.setChecked(True)
+
     def update_groupbox_graph(self):
         self.groupbox_graph.update()
 
@@ -175,10 +176,14 @@ class MainWindow(QWidget):
         self.fight.setRange((food_value / 2) + 0.1, 1000)
 
     def change_to_graph(self):
-        pass
+            self.image.hide()
+            self.canvas.show()
+
 
     def change_to_default(self):
-        pass
+        self.image.show()
+        self.canvas.hide()
+
 
 
 
@@ -288,10 +293,6 @@ class MainWindow(QWidget):
         D = QLabel('Initial Dove Fraction:')
         G = QLabel('Simulation Length:')
 
-        #test graph
-        # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
-        self.fig = None
-        self.canvas = FigureCanvas(self.fig)
 
         self.switch_graph = QRadioButton("Graph",self)
         self.switch_default = QRadioButton("Instructions",self)
@@ -303,6 +304,13 @@ class MainWindow(QWidget):
 
         self.switch_graph.clicked.connect(self.change_to_graph)
         self.switch_default.clicked.connect(self.change_to_default)
+
+        #test graph
+        # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
+        self.fig = plt.figure()
+        self.canvas = FigureCanvas(self.fig)
+
+
         # Get the absolute path to the directory containing the script
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -441,10 +449,14 @@ class MainWindow(QWidget):
         self.groupbox_graph.setContentsMargins(10, 10, 10, 10)
         self.groupbox_graph.setLayout(self.fig_box)
 
+
+        choice_graph = QHBoxLayout()
+        choice_graph.addWidget(self.switch_default)
+        choice_graph.addWidget(self.switch_graph)
+
         Partie_droite = QVBoxLayout()
         Partie_droite.addWidget(self.prog_bar)
-        Partie_droite.addWidget(self.switch_default)
-        Partie_droite.addWidget(self.switch_graph)
+        Partie_droite.addLayout(choice_graph)
         Partie_droite.addWidget(self.groupbox_graph)
 
 
