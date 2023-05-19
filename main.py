@@ -184,7 +184,9 @@ class MainWindow(QWidget):
         self.image.show()
         self.canvas.hide()
 
-
+    ################
+    # creating the UI main definition and layout
+    ################
 
 
     def initUI(self):
@@ -197,6 +199,7 @@ class MainWindow(QWidget):
         #create progress bar
         self.prog_bar = QProgressBar(self)
 
+        #create the matrix of parameters
         matrix_v_grid = QGridLayout()
         self.p_HH = QDoubleSpinBox(self)
         self.p_HH.setValue(-1)
@@ -223,47 +226,53 @@ class MainWindow(QWidget):
         self.v_default.setValue(self.p_HD.value())
         v_def = QLabel("Default Food Value")
 
+        #create the bix for entering the initial population
         self.pop_ini = QSpinBox(self)
         self.pop_ini.setRange(0, 10000)
         self.pop_ini.setValue(100)
 
+        #create the box for entering the maximum population
         self.pop_max = QSpinBox(self)
         self.pop_max.setRange(0, 10_000)
         self.pop_max.setValue(1_000)
 
+        #create the box for entering the number of nodes ( = number of food sources)
         self.nodes = QSpinBox(self)
         self.nodes.setRange(0,10_000)
         self.nodes.setValue(self.pop_max.value())
 
+        #create the box for entering the initial proportion of doves
         self.pop_dove = QSpinBox(self)
         self.pop_dove.setRange(0, 100)
         self.pop_dove.setValue(50)
 
-        ## length of simulation
+        #length of simulation
         self.length_sim = QSpinBox(self)
         self.length_sim.setRange(0, 10_000)
         self.length_sim.setValue(100)
 
-        ## limitation of population
+        #greating the buttons to choose the method to remove players above the limit
         self.pop_limit_random_check = QRadioButton('Random', self)
         self.pop_limit_random_check.setChecked(True)
         self.pop_limit_olders_win = QRadioButton('Olders win', self)
         self.pop_limit_youngers_win = QRadioButton('Youngers win', self)
 
-        self.launch = QPushButton("Apply & Launch")
+        #creating the button to start and stop the simulation
+        self.launch = QPushButton("Apply and start")
+        self.launch.setStyleSheet("background-color: green;")
         self.launch.clicked.connect(self.launch_sim)
         self.stop_button = QPushButton("Stop")
+        self.stop_button.setStyleSheet("background-color: red;")
         self.stop_button.clicked.connect(self.stop_threads)
 
-
-
+        #creating box to choice the random seed manually if needed ( for debugging )
         self.seed = QSpinBox(self)
         self.seed.setMinimum(-1)
         self.seed.setMaximum(10000)
         self.seed.setValue(1)
         seed_label = QLabel('Seed (enter negative value for random): ')
 
-        ## mutation
+        #creating the sliders to choose the mutation rate
         self.dove_to_hawk = QSpinBox(self)
         self.hawk_to_dove = QSpinBox(self)
         dove_to_hawk_label = QLabel('Percentage dove to hawk mutation: ')
@@ -273,7 +282,7 @@ class MainWindow(QWidget):
         self.dove_to_hawk.setRange(0, 100)
         self.hawk_to_dove.setRange(0, 100)
 
-        ## Food search
+        #creating the boxes to choose mean and std of the food search value
         self.mean_dove = QSpinBox(self)
         self.mean_hawk = QSpinBox(self)
         self.std_dove = QSpinBox(self)
@@ -287,6 +296,7 @@ class MainWindow(QWidget):
         food_label_std_h = QLabel('Std')
         food_label_std_d = QLabel('Std')
 
+        #creating the needed labels
         NODES = QLabel("Number of food nodes")
         N = QLabel('Initial Population:')
         M = QLabel('Maximum Population:')
@@ -294,6 +304,7 @@ class MainWindow(QWidget):
         G = QLabel('Simulation Length:')
 
 
+        # creating the buttons to switch between the graph and the instructions
         self.switch_graph = QRadioButton("Graph",self)
         self.switch_default = QRadioButton("Instructions",self)
         self.switch_default.setChecked(True)
@@ -335,134 +346,143 @@ class MainWindow(QWidget):
         lunch_box.addWidget(self.launch)
         lunch_box.addWidget(self.stop_button)
 
-        # Create layouts
-        hbox1 = QVBoxLayout()
-        hbox1.addLayout(matrix_v_grid)
-        hbox1.addWidget(v_def)
-        hbox1.addWidget(self.v_default)
-        hbox1.addWidget(N)
-        hbox1.addWidget(self.pop_ini)
-        hbox1.addWidget(M)
-        hbox1.addWidget(self.pop_max)
-        hbox1.addWidget(NODES)
-        hbox1.addWidget(self.nodes)
-        hbox1.addWidget(D)
-        hbox1.addWidget(self.pop_dove)
-        hbox1.addWidget(G)
-        hbox1.addWidget(self.length_sim)
-        hbox1.addWidget(seed_label)
-        hbox1.addWidget(self.seed)
+        ################
+        # creating layouts for the left side ( all the settings )
+        ################
+        general_setting_layout = QVBoxLayout()
+        general_setting_layout.addLayout(matrix_v_grid)
+        general_setting_layout.addWidget(v_def)
+        general_setting_layout.addWidget(self.v_default)
+        general_setting_layout.addWidget(N)
+        general_setting_layout.addWidget(self.pop_ini)
+        general_setting_layout.addWidget(M)
+        general_setting_layout.addWidget(self.pop_max)
+        general_setting_layout.addWidget(NODES)
+        general_setting_layout.addWidget(self.nodes)
+        general_setting_layout.addWidget(D)
+        general_setting_layout.addWidget(self.pop_dove)
+        general_setting_layout.addWidget(G)
+        general_setting_layout.addWidget(self.length_sim)
+        general_setting_layout.addWidget(seed_label)
+        general_setting_layout.addWidget(self.seed)
 
         ## Limitation of population
-        limit_pop_group = QButtonGroup()
-        limit_pop_group.addButton(self.pop_limit_random_check)
-        limit_pop_group.addButton(self.pop_limit_olders_win)
-        limit_pop_group.addButton(self.pop_limit_youngers_win)
-        limit_pop_group.setExclusive(True)
+        limit_pop_button_Qgroup = QButtonGroup()
+        limit_pop_button_Qgroup.addButton(self.pop_limit_random_check)
+        limit_pop_button_Qgroup.addButton(self.pop_limit_olders_win)
+        limit_pop_button_Qgroup.addButton(self.pop_limit_youngers_win)
+        limit_pop_button_Qgroup.setExclusive(True)
         #
-        box_limit_pop = QHBoxLayout()
-        box_limit_pop.addWidget(self.pop_limit_random_check)
-        box_limit_pop.addWidget(self.pop_limit_olders_win)
-        box_limit_pop.addWidget(self.pop_limit_youngers_win)
+        pop_limit_layout = QHBoxLayout()
+        pop_limit_layout.addWidget(self.pop_limit_random_check)
+        pop_limit_layout.addWidget(self.pop_limit_olders_win)
+        pop_limit_layout.addWidget(self.pop_limit_youngers_win)
 
         # mutation
-        hawk_to_dove_box = QHBoxLayout()
-        hawk_to_dove_box.addWidget(hawk_to_dove_label)
-        hawk_to_dove_box.addWidget(self.hawk_to_dove)
+        hawk_to_dove_layout = QHBoxLayout()
+        hawk_to_dove_layout.addWidget(hawk_to_dove_label)
+        hawk_to_dove_layout.addWidget(self.hawk_to_dove)
 
-        dove_to_hawk_box = QHBoxLayout()
-        dove_to_hawk_box.addWidget(dove_to_hawk_label)
-        dove_to_hawk_box.addWidget(self.dove_to_hawk)
+        dove_to_hawk_layout = QHBoxLayout()
+        dove_to_hawk_layout.addWidget(dove_to_hawk_label)
+        dove_to_hawk_layout.addWidget(self.dove_to_hawk)
 
-        mutation_box = QVBoxLayout()
-        mutation_box.addLayout(hawk_to_dove_box)
-        mutation_box.addLayout(dove_to_hawk_box)
+        mutation_layout = QVBoxLayout()
+        mutation_layout.addLayout(hawk_to_dove_layout)
+        mutation_layout.addLayout(dove_to_hawk_layout)
 
         # food_search
-        food_search_dove_box = QHBoxLayout()
-        food_search_dove_box.addWidget(food_label_dove)
-        food_search_dove_box.addWidget(food_label_mean_d)
-        food_search_dove_box.addWidget(self.mean_dove)
-        food_search_dove_box.addWidget(food_label_std_d)
-        food_search_dove_box.addWidget(self.std_dove)
+        time_catch_dove_layout = QHBoxLayout()
+        time_catch_dove_layout.addWidget(food_label_dove)
+        time_catch_dove_layout.addWidget(food_label_mean_d)
+        time_catch_dove_layout.addWidget(self.mean_dove)
+        time_catch_dove_layout.addWidget(food_label_std_d)
+        time_catch_dove_layout.addWidget(self.std_dove)
 
-        food_search_hawk_box = QHBoxLayout()
-        food_search_hawk_box.addWidget(food_label_hawk)
-        food_search_hawk_box.addWidget(food_label_mean_h)
-        food_search_hawk_box.addWidget(self.mean_hawk)
-        food_search_hawk_box.addWidget(food_label_std_h)
-        food_search_hawk_box.addWidget(self.std_hawk)
+        time_catch_hawk_layout = QHBoxLayout()
+        time_catch_hawk_layout.addWidget(food_label_hawk)
+        time_catch_hawk_layout.addWidget(food_label_mean_h)
+        time_catch_hawk_layout.addWidget(self.mean_hawk)
+        time_catch_hawk_layout.addWidget(food_label_std_h)
+        time_catch_hawk_layout.addWidget(self.std_hawk)
 
-        food_search_box = QVBoxLayout()
-        food_search_box.addLayout(food_search_dove_box)
-        food_search_box.addLayout(food_search_hawk_box)
-
-
-        # Create group boxes
-        groupbox1 = QGroupBox('General settings', self)
-        groupbox1.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        groupbox1.setContentsMargins(10, 10, 10, 10)
-        groupbox1.setLayout(hbox1)
+        food_search_layout = QVBoxLayout()
+        food_search_layout.addLayout(time_catch_dove_layout)
+        food_search_layout.addLayout(time_catch_hawk_layout)
 
 
-        groupbox_limit_pop = QGroupBox('Limitation of population', self)
-        groupbox_limit_pop.setCheckable(True)
-        groupbox_limit_pop.setChecked(self.limit_pop)
-        groupbox_limit_pop.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        groupbox_limit_pop.setLayout(box_limit_pop)
-        groupbox_limit_pop.clicked.connect(self.change_limit_pop)
+        ################
+        # creating the group boxes for the left side ( all the settings )
+        ################
 
-        groupbox_mutation = QGroupBox('Mutation', self)
-        groupbox_mutation.setCheckable(True)
-        groupbox_mutation.setChecked(self.mutation)
-        groupbox_mutation.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        groupbox_mutation.setLayout(mutation_box)
-        groupbox_mutation.clicked.connect(self.change_mutation)
+        parameters_box = QGroupBox('General settings', self)
+        parameters_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        parameters_box.setContentsMargins(10, 10, 10, 10)
+        parameters_box.setLayout(general_setting_layout)
 
-        groupbox_food_search = QGroupBox('Time to catch', self)
-        groupbox_food_search.setCheckable(True)
-        groupbox_food_search.setChecked(self.food_search)
-        groupbox_food_search.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        groupbox_food_search.setLayout(food_search_box)
-        groupbox_food_search.clicked.connect(self.change_food_search)
+        limit_pop_box = QGroupBox('Limitation of population', self)
+        limit_pop_box.setCheckable(True)
+        limit_pop_box.setChecked(self.limit_pop)
+        limit_pop_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        limit_pop_box.setLayout(pop_limit_layout)
+        limit_pop_box.clicked.connect(self.change_limit_pop)
+
+        mutation_box = QGroupBox('Mutation', self)
+        mutation_box.setCheckable(True)
+        mutation_box.setChecked(self.mutation)
+        mutation_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        mutation_box.setLayout(mutation_layout)
+        mutation_box.clicked.connect(self.change_mutation)
+
+        food_search_box = QGroupBox('Time to catch', self)
+        food_search_box.setCheckable(True)
+        food_search_box.setChecked(self.food_search)
+        food_search_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        food_search_box.setLayout(food_search_layout)
+        food_search_box.clicked.connect(self.change_food_search)
 
 
-        groupbox_lunch_box = QGroupBox('Launch', self)
-        groupbox_lunch_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        starting_box = QGroupBox('Launch', self)
+        starting_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        starting_box.setLayout(lunch_box)
 
-        groupbox_lunch_box.setLayout(lunch_box)
-
-        vbox = QVBoxLayout()
-        vbox.addWidget(groupbox1)
-        vbox.addWidget(groupbox_limit_pop)
-        vbox.addWidget(groupbox_mutation)
-        vbox.addWidget(groupbox_food_search)
-        vbox.addWidget(groupbox_lunch_box)
+        left_box = QVBoxLayout()
+        left_box.addWidget(parameters_box)
+        left_box.addWidget(limit_pop_box)
+        left_box.addWidget(mutation_box)
+        left_box.addWidget(food_search_box)
+        left_box.addWidget(starting_box)
 
         groupbox_parameters = QGroupBox('Parameters', self)
         groupbox_parameters.setStyleSheet('QGroupBox{border: 2px solid black;}')
         groupbox_parameters.setContentsMargins(10, 10, 10, 10)
-        groupbox_parameters.setLayout(vbox)
+        groupbox_parameters.setLayout(left_box)
 
-        self.groupbox_graph = QGroupBox('Graph', self)
-        self.groupbox_graph.setStyleSheet('QGroupBox{border: 2px solid black;}')
-        self.groupbox_graph.setContentsMargins(10, 10, 10, 10)
-        self.groupbox_graph.setLayout(self.fig_box)
-
+        ################
+        # creating the layouts and the group boxes for the left side ( viewing the graph
+        ################
 
         choice_graph = QHBoxLayout()
         choice_graph.addWidget(self.switch_default)
         choice_graph.addWidget(self.switch_graph)
 
-        Partie_droite = QVBoxLayout()
-        Partie_droite.addWidget(self.prog_bar)
-        Partie_droite.addLayout(choice_graph)
-        Partie_droite.addWidget(self.groupbox_graph)
 
+
+        display_box = QGroupBox('Graph', self)
+        display_box.setStyleSheet('QGroupBox{border: 2px solid black;}')
+        display_box.setContentsMargins(10, 10, 10, 10)
+        display_box.setLayout(self.fig_box)
+
+        right_side = QVBoxLayout()
+        right_side.addWidget(self.prog_bar)
+        right_side.addLayout(choice_graph)
+        right_side.addWidget(display_box)
+
+       #Setup main windows
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(groupbox_parameters)
-        main_layout.addLayout(Partie_droite)
+        main_layout.addLayout(right_side)
 
 
         # Set the main layout
