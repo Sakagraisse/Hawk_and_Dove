@@ -304,7 +304,7 @@ class MainWindow(QWidget):
 
         # creating the buttons to switch between the graph and the instructions
         self.switch_graph = QRadioButton("Graph",self)
-        self.switch_default = QRadioButton("Instructions",self)
+        self.switch_default = QRadioButton("Sketch",self)
         self.switch_default.setChecked(True)
         switch_group = QButtonGroup()
         switch_group.addButton(self.switch_graph)
