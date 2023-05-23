@@ -311,8 +311,24 @@ class MainWindow(QWidget):
         switch_group.addButton(self.switch_default)
         switch_group.setExclusive(True)
 
+        self.counter =0
+
+        def change_counter():
+            self.change_to_default()
+            self.counter +=1
+            if self.counter == 6:
+                self.pixmap = QtGui.QPixmap(file_path_egg)
+                max_height = int(screen_height * 0.8)
+                self.pixmap = self.pixmap.scaledToHeight(max_height)
+                self.image.setPixmap(self.pixmap)
+                self.image.setScaledContents(True)
+                self.image.show()
+                self.counter = 0
+
+
+        #connecting the buttons to the functions
         self.switch_graph.clicked.connect(self.change_to_graph)
-        self.switch_default.clicked.connect(self.change_to_default)
+        self.switch_default.clicked.connect(lambda: change_counter())
 
         #test graph
         # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
