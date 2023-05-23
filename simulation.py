@@ -5,12 +5,28 @@ from random import random, shuffle , seed
 from numpy.random import normal
 import data_storage as ds
 from collections import Counter
+import pandas as pd
 
 import pandas as pd
+# Create a player class that give his type : hawk or dove
+# id is unique identifier
+# fitness is the survival rate of an individual if inferior to 1
+class Player :
+    ID = 0
+    def __init__(self,type):
+        self.type = type
+        self.id = Player.ID
+        Player.ID += 1
+        self.fitness = 1
+
+
+def calc_exp(dict):
+    return sum(dict.values())/Player.ID
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
 def run_sim(params,results):
+    """This function handles the simulation"""
     # Set the desired seed for replicability of a random one if negative
     progress = 0
     if params["SEED"] < 0:
@@ -28,8 +44,11 @@ def run_sim(params,results):
     #create the initial population
     pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
 
+    expectancy = {}
+    for individual in pop :
+        expectancy[individual.ID] = 0
     #create the initial line of statistics
-    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"]]
+    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"], 0,params["INITIAL_DOVE"],len(pop)]
 
     # Main loop for simulation
     for period in range(1, params["GEN"]+1):
@@ -46,42 +65,22 @@ def run_sim(params,results):
         # Create the offspring according to the fitness of each individual
         pop = selection2(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
         # Remove excess individuals if needed
-        pop = serial_killer(pop,params)
+        pop = purge(pop,params)
         # store the new line of statistics 
         # create stats
-        pop_stats = study_population_basic(pop)
+        update_expectancy(pop,expectancy)
+        pop_stats = study_population_basic(pop, calc_exp(expectancy),results,params)
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
-    graph = ds.get_plot_2(results)
+    graph = ds.get_plot_2(results,params)
     return graph
 
-################
-#create the initial population
-################
-# Create a player class that give his type : hawk or dove
-# id is unique identifier
-# generation is the generation in which an individual was created
-# fitness is the survival rate of an individual if inferior to 1
-# the probability to produce an offspring if fitness superior to 1 is fitness - 1
-# genealogy is the list of the id of the parents
-# genealogy limit is number depth of the genealogy
-class Player :
-    ID = 0
-    def __init__(self,type):
-        self.type = type
-        self.id = Player.ID
-        self.parent = -1
-        self.grandparent = -1
-        self.generation = 0
-        Player.ID += 1
-        self.fitness = 1
-        self.genealogy = [self.id, self.parent, self.grandparent]
 
-    def add_genealogy(self,parent):
-        self.parent = parent.id
-        self.grandparent = parent.grandparent
-        self.genealogy = [self.id,self.parent,self.grandparent]
+def update_expectancy(data,exp):
+    for individual in data :
+        if individual.ID in exp.keys() : exp[individual.ID] += 1
+        else : exp[individual.ID] = 1
 
 
 ################
@@ -91,21 +90,10 @@ class Player :
 # There is a number of individual set by : number_of_indiv
 # and the proportion of dove is set by : number_of_doves
 def create_initial_pop(number_of_indiv, number_of_doves):
+    """This function creates the initial population with user-defined parameters"""
     total_doves = int(round(number_of_doves * number_of_indiv,0))
     # Utiliser une liste en compréhension
     return [Player("dove") if i < total_doves else Player("hawk") for i in range(number_of_indiv)]
-
-################
-# track the proportion
-################
-# to_study is the population to study and is an array
-# to_track is the type to track and is a string
-def count_type(to_study, to_track):
-    count = 0
-    for player in to_study:
-        if player.type == to_track:
-            count += 1
-    return count
 
 
 ################
@@ -114,11 +102,11 @@ def count_type(to_study, to_track):
 # We simulate "food nodes" to which the population can go to. If they end up at a node alone, they eat the default value. Otherwise, they fight
 # over what is present
 def fight(to_study,default,nodes,payoffs):
+    """This function handles interactions between types"""
     #the nodes fill the rest of the population ; it means that as long as the population doesn't hit the node cap,
     #they will have opportunity to reproduce freely
     nodes_list = [0]*(nodes-len(to_study))
     temp_list = to_study + nodes_list
-    print(len(nodes_list),len(to_study),len(temp_list))
     shuffle(temp_list)
     for i in range(0,len(temp_list),2):
         #we first need to check that the pairing is not an empty node with itself
@@ -155,6 +143,7 @@ def fight(to_study,default,nodes,payoffs):
 # to search for food
 ################
 def food_search(population,mean_hawk,shape_hawk,mean_dove,shape_dove):
+    """This function handles the special case where types need time to get to the node"""
     for animal in population:
         if animal.type == "hawk":
             animal.fitness -= normal(loc = mean_hawk,
@@ -162,81 +151,17 @@ def food_search(population,mean_hawk,shape_hawk,mean_dove,shape_dove):
         else:
             animal.fitness -= normal(loc = mean_dove,
                                  scale = shape_dove)
-################
-# Kin selection
-################
-# the assumpution is that if two individuals are brother/sister they will help each other
-# this is modelised by a reduction of the cost to fight of half
-# this is the same for parents and children
-# and one quarter of reduction between grand-parents and grand-children
-
-def kin_selection_HH(player_1 :{Player},player_2 : {Player},parameters):
-    if player_1.genealogy[1] == player_2.genealogy[1] or player_1.genealogy[0] == player_2.genealogy[1] \
-            or player_1.genealogy[1] == player_2.genealogy[0]:
-        player_1.fitness += parameters["C"]/2
-        player_2.fitness += parameters["C"]/2
-    elif player_1.genealogy[0] == player_2.genealogy[2] or player_1.genealogy[2] == player_2.genealogy[0]:
-        player_1.fitness += parameters["C"]/4
-        player_2.fitness += parameters["C"]/4
-
-def kin_selection_HD (player_1: {Player}, player_2: {Player}, parameters):
-    if player_1.genealogy[1] == player_2.genealogy[1] or player_1.genealogy[0] == player_2.genealogy[1] \
-            or player_1.genealogy[1] == player_2.genealogy[0]:
-        player_1.fitness -= parameters["C"]/4
-        player_2.fitness += parameters["C"]/4
-    elif player_1.genealogy[0] == player_2.genealogy[2] or player_1.genealogy[2] == player_2.genealogy[0]:
-        player_1.fitness -= parameters["C"]/8
-        player_2.fitness += parameters["C"]/8
-
-
-
-
 
 ################
 # Compute the next generation of the population
 ################
-# if the fitness is superior to 1, the individual has a probability of 1 - fitness to produce an offspring
-# if the fitness is inferior to 1, the individual has a probability of fitness survive to the next generation
-# if the individual is selected to produce an offspring,the probability to produce an offspring of the othertype
-# is mutation_rate
-
-#deprecated, see selection2
-# def selection(pop_t,dove_to_hawk=0,hawk_to_dove=0):
-#     #create the array to return
-#     final_array = []
-#     # for each individual, we compute if it survives to the next generation
-#     # if yes, compute if it produces an offspring
-#     for i in range(len(pop_t)):
-#         # if the fitness is superior to 1
-#         if random() <= pop_t[i].fitness - 1 :
-#             test = random()
-#             if pop_t[i].type == "hawk":
-#                 if test < hawk_to_dove:
-#                     new_player = Player("dove")
-#                     new_player.add_genealogy(pop_t[i])
-#                     final_array.append(new_player)
-#                 else:
-#                     new_player = Player("hawk")
-#                     new_player.add_genealogy(pop_t[i])
-#                     final_array.append(new_player)
-#             elif pop_t[i].type == "dove":
-#                 if test < dove_to_hawk:
-#                     new_player = Player("hawk")
-#                     new_player.add_genealogy(pop_t[i])
-#                     final_array.append(new_player)
-#                 else:
-#                     new_player = Player("dove")
-#                     new_player.add_genealogy(pop_t[i])
-#                     final_array.append(new_player)
-#         if random() <= pop_t[i].fitness:
-#             final_array.append(pop_t[i])
-#     return final_array
 
 #refactoring of selection : this time, if the fitness is superior to 1, the individual
 #survives for sure, and creates descendants surely for every floor(integer)-1
 #The decimal part can then be created or not
 #finally, we check mutation for each new descendant
 def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
+    """This function handles how the population goes to the next generation"""
     final_array = []
     for individual in pop_t:
         descendants = []
@@ -277,17 +202,22 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 ################
 # take the population and return the number of individual, the number of dove and the ratio
 
-def study_population_basic(pop_t):
+def study_population_basic(pop_t, exp,results,params):
+    """This function handles the various statistics we track, and returns a list of them"""
     pop_counter = Counter(p.type for p in pop_t)
     dove_count = pop_counter["dove"]
+    window = int(round(params["GEN"]*0.1,0))
+    rolling_prop = rolling_avg(results["proportion of dove"],window)
+    avg_pop = rolling_avg(results["total population"],window)
+    print(rolling_prop)
     try:
-        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t)]
+        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
     except:
-        year_t = [len(pop_t), dove_count, 0, 0]
+        year_t = [len(pop_t), dove_count, 0, 0, exp,rolling_prop,avg_pop]
     return year_t
 
 ################
-# serial killer
+# purge
 ################
 # If the pop is above the limit, choose a method to remove individuals
 # check if the pop is above the limit
@@ -297,7 +227,8 @@ def study_population_basic(pop_t):
 # remove the first individuals until the pop is below the limit
 
 
-def serial_killer(pop_t, params):
+def purge(pop_t, params):
+    """This function handles the population limit"""
     if len(pop_t) < params["MAX_POP"]:
         return pop_t
     else :
@@ -316,4 +247,9 @@ def serial_killer(pop_t, params):
             pop_t = pop_t[:params["MAX_POP"]]
             return pop_t
         else :
-            print("ERROR : no method selected for serial killer")
+            raise"ERROR : no method selected for purge"
+
+
+def rolling_avg(data,window):
+    effective_window = min(len(data),window)
+    return data[len(data)-effective_window:].mean()
