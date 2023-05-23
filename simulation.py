@@ -5,6 +5,7 @@ from random import random, shuffle , seed
 from numpy.random import normal
 import data_storage as ds
 from collections import Counter
+import pandas as pd
 
 import pandas as pd
 # Create a player class that give his type : hawk or dove
@@ -47,7 +48,7 @@ def run_sim(params,results):
     for individual in pop :
         expectancy[individual.ID] = 0
     #create the initial line of statistics
-    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"], 0]
+    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"], 0,params["INITIAL_DOVE"],len(pop)]
 
     # Main loop for simulation
     for period in range(1, params["GEN"]+1):
@@ -68,11 +69,11 @@ def run_sim(params,results):
         # store the new line of statistics 
         # create stats
         update_expectancy(pop,expectancy)
-        pop_stats = study_population_basic(pop, calc_exp(expectancy))
+        pop_stats = study_population_basic(pop, calc_exp(expectancy),results,params)
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
-    graph = ds.get_plot_2(results)
+    graph = ds.get_plot_2(results,params)
     return graph
 
 
@@ -201,14 +202,18 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 ################
 # take the population and return the number of individual, the number of dove and the ratio
 
-def study_population_basic(pop_t, exp):
+def study_population_basic(pop_t, exp,results,params):
     """This function handles the various statistics we track, and returns a list of them"""
     pop_counter = Counter(p.type for p in pop_t)
     dove_count = pop_counter["dove"]
+    window = int(round(params["GEN"]*0.1,0))
+    rolling_prop = rolling_avg(results["proportion of dove"],window)
+    avg_pop = rolling_avg(results["total population"],window)
+    print(rolling_prop)
     try:
-        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp]
+        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
     except:
-        year_t = [len(pop_t), dove_count, 0, 0, exp]
+        year_t = [len(pop_t), dove_count, 0, 0, exp,rolling_prop,avg_pop]
     return year_t
 
 ################
@@ -243,3 +248,8 @@ def purge(pop_t, params):
             return pop_t
         else :
             raise"ERROR : no method selected for purge"
+
+
+def rolling_avg(data,window):
+    effective_window = min(len(data),window)
+    return data[len(data)-effective_window:].mean()

@@ -81,7 +81,7 @@ class MainWindow(QWidget):
         self.prog_bar.setValue(0)
         self.results = pd.DataFrame(columns=["generation", "total population",
                                         "population increase %",
-                                        "proportion of dove", "proportion of hawk", "avg life expectancy"])
+                                        "proportion of dove", "proportion of hawk", "avg life expectancy","prop_dove_rolling","total_pop_avg"])
         self.parameters["PHH"] = self.p_HH.value()
         self.parameters["PHD"] = self.p_HD.value()
         self.parameters["PDH"] = self.p_DH.value()
@@ -124,10 +124,6 @@ class MainWindow(QWidget):
             self.parameters["IS_FOOD_SEARCH"] = False
         #(self.parameters)
 
-        if self.kin_selection:
-            self.parameters["IS_KIN_SELECT"] = True
-        else:
-            self.parameters["IS_KIN_SELECT"] = False
 
 
         self.thread = handle_simulation(self.parameters,self.results)
