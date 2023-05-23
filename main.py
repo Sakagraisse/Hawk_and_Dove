@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QRadioButton, QPushButton, QGroupBox, QHBoxLayout, \
     QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar, \
-    QGridLayout
+    QGridLayout, QSizePolicy
 from PyQt6.QtCore import QThread , pyqtSignal
 from PyQt6 import QtGui
 import simulation as sim
@@ -35,6 +35,7 @@ class update_progress_bar(QThread):
             time.sleep(0.1)
             percent = int(len(self.results) / self.parameters["GEN"] * 100)
             self.progress.emit(percent)
+        self.progress.emit(100)
 
 
 
@@ -131,15 +132,16 @@ class MainWindow(QWidget):
 
         self.thread = handle_simulation(self.parameters,self.results)
         self.th2 = update_progress_bar(self.results, self.parameters)
-
-        self.thread.start()
-        self.th2.start()
-
         self.th2.progress.connect(self.update_babar)
         self.thread.simulation.connect(self.handle_simulation_result)
 
-        self.prog_bar.setValue(100)
-        self.prog_bar.update()
+        self.thread.start()
+        self.th2.start()
+        self.thread.quit()
+        self.th2.quit()
+
+
+
 
     def stop_threads(self):
         if hasattr(self, 'thread') and self.thread.isRunning():
@@ -153,7 +155,7 @@ class MainWindow(QWidget):
             self.th2.quit()
             self.th2.terminate()
             self.th2.wait()
-        self.handle_simulation_result(None)
+        self.handle_simulation_result(plt.plot)
         self.update_babar(0)
     def update_babar(self, percent):
         self.prog_bar.setValue(percent)
@@ -164,9 +166,10 @@ class MainWindow(QWidget):
         self.fig = new_fig
 
         new_canvas = FigureCanvas(self.fig)
-        self.fig_box.removeWidget(self.image)
+        #self.fig_box.removeWidget(self.image)
         self.fig_box.replaceWidget(self.canvas, new_canvas)
         self.canvas = new_canvas
+        self.change_to_graph()
         self.switch_graph.setChecked(True)
 
     def update_groupbox_graph(self):
@@ -180,7 +183,7 @@ class MainWindow(QWidget):
             self.canvas.show()
 
 
-    def change_to_default(self):
+    def change_to_default(self,):
         self.image.show()
         self.canvas.hide()
 
@@ -202,15 +205,15 @@ class MainWindow(QWidget):
         #create the matrix of parameters
         matrix_v_grid = QGridLayout()
         self.p_HH = QDoubleSpinBox(self)
-        self.p_HH.setValue(-1)
+        self.p_HH.setValue(0)
         self.p_HH.setRange(-50,100)
         matrix_v_grid.addWidget(self.p_HH,1,1)
         self.p_HD = QDoubleSpinBox(self)
-        self.p_HD.setValue(2)
+        self.p_HD.setValue(1.5)
         self.p_HD.setRange(-50,100)
         matrix_v_grid.addWidget(self.p_HD,1,2)
         self.p_DH = QDoubleSpinBox(self)
-        self.p_DH.setValue(0)
+        self.p_DH.setValue(0.5)
         self.p_DH.setRange(-50,100)
         matrix_v_grid.addWidget(self.p_DH,2,1)
         self.p_DD = QDoubleSpinBox(self)
@@ -229,7 +232,7 @@ class MainWindow(QWidget):
         #create the bix for entering the initial population
         self.pop_ini = QSpinBox(self)
         self.pop_ini.setRange(0, 10000)
-        self.pop_ini.setValue(100)
+        self.pop_ini.setValue(500)
 
         #create the box for entering the maximum population
         self.pop_max = QSpinBox(self)
@@ -244,12 +247,12 @@ class MainWindow(QWidget):
         #create the box for entering the initial proportion of doves
         self.pop_dove = QSpinBox(self)
         self.pop_dove.setRange(0, 100)
-        self.pop_dove.setValue(50)
+        self.pop_dove.setValue(20)
 
         #length of simulation
         self.length_sim = QSpinBox(self)
         self.length_sim.setRange(0, 10_000)
-        self.length_sim.setValue(100)
+        self.length_sim.setValue(500)
 
         #greating the buttons to choose the method to remove players above the limit
         self.pop_limit_random_check = QRadioButton('Random', self)
@@ -303,7 +306,6 @@ class MainWindow(QWidget):
         D = QLabel('Initial Dove Fraction:')
         G = QLabel('Simulation Length:')
 
-
         # creating the buttons to switch between the graph and the instructions
         self.switch_graph = QRadioButton("Graph",self)
         self.switch_default = QRadioButton("Instructions",self)
@@ -325,10 +327,13 @@ class MainWindow(QWidget):
         # Get the absolute path to the directory containing the script
         dir_path = os.path.dirname(os.path.abspath(__file__))
 
-        # Get the absolute path to the 'welcome.jpg' file in the same directory
-        file_path = os.path.join(dir_path, 'welcome.jpg')
+        # Get the absolute path to the 'background.jpg' file in the same directory
+        file_path = os.path.join(dir_path, 'background.jpg')
 
-        # Load the image using QPixmap
+        #get the absolute path to the easter egg
+        file_path_egg = os.path.join(dir_path, 'welcome.jpg')
+
+        # Load the easter egg using QPixmap
         self.image = QLabel()
         self.pixmap = QtGui.QPixmap(file_path)
         max_height = int(screen_height * 0.8)
@@ -336,12 +341,13 @@ class MainWindow(QWidget):
         self.image.setPixmap(self.pixmap)
         self.image.setScaledContents(True)
 
+        # Create a QVBoxLayout and add the FigureCanvasQTAgg widget to it
 
         self.fig_box = QVBoxLayout()
         self.fig_box.addWidget(self.image)
         self.fig_box.addWidget(self.canvas)
 
-        ## elon musk
+        # Create a layout for the start and stop buttons
         lunch_box = QVBoxLayout()
         lunch_box.addWidget(self.launch)
         lunch_box.addWidget(self.stop_button)
@@ -459,7 +465,7 @@ class MainWindow(QWidget):
         groupbox_parameters.setLayout(left_box)
 
         ################
-        # creating the layouts and the group boxes for the left side ( viewing the graph
+        # creating the layouts and the group boxes for the right side ( viewing the graph
         ################
 
         choice_graph = QHBoxLayout()

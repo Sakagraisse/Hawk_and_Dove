@@ -7,8 +7,15 @@ def add_line(liste,results):
 def get_plot_2(results):
     """This function plots the relevant dataframe information"""
     fig, axs = plt.subplots(2)
-
+    try:
+        expected_equilibrium = 1-(params["PDD"]-params["PHD"])/(params["PHH"]-params["PDH"]+params["PDD"]-params["PHD"])
+    except:
+        expected_equilibrium = 0
+    if expected_equilibrium > 1: expected_equilibrium=1
+    elif expected_equilibrium < 0 : expected_equilibrium=0
     results[["proportion of dove", "proportion of hawk"]].plot.area(ax=axs[0])
+    results["prop_dove_rolling"].plot(ax=axs[0])
+    axs[0].axhline(y=expected_equilibrium, color='red', linestyle='--')
     results[['total population']].plot(ax=axs[1])
     #fig = ax.get_figure()
     return fig
