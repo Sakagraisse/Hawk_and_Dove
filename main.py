@@ -2,7 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QRadioButton, QPushButton, QGroupBox, QHBoxLayout, \
     QSpinBox, QLabel, QButtonGroup, QApplication, QVBoxLayout, QWidget, QDoubleSpinBox, QProgressBar, \
-    QGridLayout, QSizePolicy
+    QGridLayout, QSizePolicy, QCheckBox
 from PyQt6.QtCore import QThread , pyqtSignal
 from PyQt6 import QtGui
 import simulation as sim
@@ -92,6 +92,7 @@ class MainWindow(QWidget):
         self.parameters["MAX_POP"] = self.pop_max.value()
         self.parameters["INITIAL_DOVE"] = self.pop_dove.value() / 100
         self.parameters["GEN"] = self.length_sim.value()
+        self.parameters["SAVE"] = self.save.isChecked()
 
         if self.seed.value() < 0:
             self.parameters["SEED"] = -1
@@ -222,7 +223,7 @@ class MainWindow(QWidget):
         matrix_v_grid.addWidget(QLabel("Dove"),0,2)
         matrix_v_grid.addWidget(QLabel("Dove"),2,0)
         self.v_default = QDoubleSpinBox(self)
-        self.v_default.setValue(self.p_HD.value())
+        self.v_default.setValue(2)
         v_def = QLabel("Default Food Value")
 
         #create the bix for entering the initial population
@@ -272,8 +273,8 @@ class MainWindow(QWidget):
         seed_label = QLabel('Seed (enter negative value for random): ')
 
         #creating the sliders to choose the mutation rate
-        self.dove_to_hawk = QSpinBox(self)
-        self.hawk_to_dove = QSpinBox(self)
+        self.dove_to_hawk = QDoubleSpinBox(self)
+        self.hawk_to_dove = QDoubleSpinBox(self)
         dove_to_hawk_label = QLabel('Percentage dove to hawk mutation: ')
         hawk_to_dove_label = QLabel('Percentage hawk to dove mutation: ')
         self.dove_to_hawk.setValue(10)
@@ -282,12 +283,20 @@ class MainWindow(QWidget):
         self.hawk_to_dove.setRange(0, 100)
 
         #creating the boxes to choose mean and std of the food search value
-        self.mean_dove = QSpinBox(self)
-        self.mean_hawk = QSpinBox(self)
-        self.std_dove = QSpinBox(self)
-        self.std_hawk = QSpinBox(self)
+        self.mean_dove = QDoubleSpinBox(self)
+        self.mean_hawk = QDoubleSpinBox(self)
+        self.std_dove = QDoubleSpinBox(self)
+        self.std_hawk = QDoubleSpinBox(self)
+        self.mean_dove.setRange(-20,20)
+        self.mean_hawk.setRange(-20, 20)
+        self.mean_dove.setValue(0)
+        self.mean_hawk.setValue(-0.3)
         self.std_dove.setMinimum(0)
         self.std_hawk.setMinimum(0)
+        self.std_dove.setRange(-20,20)
+        self.std_hawk.setRange(-20,20)
+        self.std_dove.setValue(0.3)
+        self.std_hawk.setValue(0.3)
         food_label_dove = QLabel('Dove')
         food_label_hawk = QLabel('Hawk')
         food_label_mean_h = QLabel('Mean')
@@ -310,6 +319,9 @@ class MainWindow(QWidget):
         switch_group.addButton(self.switch_graph)
         switch_group.addButton(self.switch_default)
         switch_group.setExclusive(True)
+
+        self.save = QCheckBox("Save the graph locally",self)
+
 
         self.counter =0
 
@@ -483,7 +495,7 @@ class MainWindow(QWidget):
         choice_graph = QHBoxLayout()
         choice_graph.addWidget(self.switch_default)
         choice_graph.addWidget(self.switch_graph)
-
+        choice_graph.addWidget(self.save)
 
 
         display_box = QGroupBox('Graph', self)
