@@ -209,7 +209,6 @@ def study_population_basic(pop_t, exp,results,params):
     window = int(round(params["GEN"]*0.1,0))
     rolling_prop = rolling_avg(results["proportion of dove"],window)
     avg_pop = rolling_avg(results["total population"],window)
-    print(rolling_prop)
     try:
         year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
     except:
@@ -251,5 +250,6 @@ def purge(pop_t, params):
 
 
 def rolling_avg(data,window):
+    """Calculates the rolling average of a column"""
     effective_window = min(len(data),window)
     return data[len(data)-effective_window:].mean()

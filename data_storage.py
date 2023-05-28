@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
-#from plotly.subplots import make_subplots
-#import plotly.graph_objects as go
+from datetime import datetime
 
 def add_line(liste,results):
     """This function adds a line of statistics to the results dataframe"""
@@ -16,10 +15,19 @@ def get_plot_2(results,params):
     if expected_equilibrium > 1: expected_equilibrium=1
     elif expected_equilibrium < 0 : expected_equilibrium=0
     results[["proportion of dove", "proportion of hawk"]].plot.area(ax=axs[0])
-    results["prop_dove_rolling"].plot(ax=axs[0])
-    axs[0].axhline(y=expected_equilibrium, color='red', linestyle='--')
-    results[['total population']].plot(ax=axs[1])
-    results["total_pop_avg"].plot(ax=axs[1])
+    results["prop_dove_rolling"].plot(ax=axs[0],label = "Rolling average")
+    axs[0].axhline(y=expected_equilibrium, color='red', linestyle='--',label = "Expected Equilibrium")
+    axs[0].set_title("Population proportion")
+    axs[0].legend(loc = "upper left")
+    results[['total population']].plot(ax=axs[1],label = "total population")
+    results["total_pop_avg"].plot(ax=axs[1],label = "Rolling average")
+    axs[1].set_title("Population growth")
+    axs[1].legend(loc = "upper left")
+    plt.tight_layout()
+    if params["SAVE"]:
+        now = datetime.now()
+        filename = now.strftime("%H%M%S")
+        plt.savefig(f"graph_{filename}.png",dpi=200)
 
     #fig = ax.get_figure()
     return fig
