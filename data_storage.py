@@ -27,7 +27,7 @@ def get_plot_2(results,params):
     if params["SAVE"]:
         now = datetime.now()
         filename = now.strftime("%H%M%S")
-        plt.savefig(f"graph_{filename}.png",dpi=200)
+        plt.savefig(f"graph_{filename}.png",dpi=400)
 
     #fig = ax.get_figure()
     return fig
