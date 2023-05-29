@@ -73,8 +73,7 @@ def run_sim(params,results):
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
-    graph = ds.get_plot_2(results,params)
-    return graph
+    return None
 
 
 def update_expectancy(data,exp):
