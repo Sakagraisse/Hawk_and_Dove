@@ -28,6 +28,9 @@ exe = EXE(pyz,
           icon='icon.ico')
 
 app = BUNDLE(exe,
-             name='hawk_dove.app',
-             icon='icon.ico',
-             bundle_identifier=None)
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+                name='hawk_dove.app',
+                icon='icon.ico',
+                bundle_identifier=None)
