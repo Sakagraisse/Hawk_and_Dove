@@ -5,6 +5,7 @@ from random import random, shuffle , seed
 from numpy.random import normal
 import data_storage as ds
 from collections import Counter
+from copy import deepcopy
 import pandas as pd
 
 import pandas as pd
@@ -65,9 +66,9 @@ def run_sim(params,results):
         # Create the offspring according to the fitness of each individual
         pop = selection2(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
         # Remove excess individuals if needed
-        pop = purge(pop,params)
         # store the new line of statistics 
         # create stats
+        pop = purge(pop, params)
         update_expectancy(pop,expectancy)
         pop_stats = study_population_basic(pop, calc_exp(expectancy),results,params)
         #store
@@ -77,9 +78,12 @@ def run_sim(params,results):
 
 
 def update_expectancy(data,exp):
-    for individual in data :
-        if individual.ID in exp.keys() : exp[individual.ID] += 1
-        else : exp[individual.ID] = 1
+    try:
+        for individual in data :
+            if individual.ID in exp.keys() : exp[individual.ID] += 1
+            else : exp[individual.ID] = 1
+    except:
+        pass
 
 
 ################
@@ -107,7 +111,7 @@ def fight(to_study,default,nodes,payoffs):
     nodes_list = [0]*(nodes-len(to_study))
     temp_list = to_study + nodes_list
     shuffle(temp_list)
-    for i in range(0,len(temp_list),2):
+    for i in range(0,len(temp_list)-1,2):
         #we first need to check that the pairing is not an empty node with itself
         if temp_list[i] == 0 and temp_list[i+1] == 0:
             pass
@@ -203,16 +207,19 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 
 def study_population_basic(pop_t, exp,results,params):
     """This function handles the various statistics we track, and returns a list of them"""
-    pop_counter = Counter(p.type for p in pop_t)
-    dove_count = pop_counter["dove"]
-    window = int(round(params["GEN"]*0.1,0))
-    rolling_prop = rolling_avg(results["proportion of dove"],window)
-    avg_pop = rolling_avg(results["total population"],window)
     try:
-        year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
-    except:
-        year_t = [len(pop_t), dove_count, 0, 0, exp,rolling_prop,avg_pop]
-    return year_t
+        pop_counter = Counter(p.type for p in pop_t)
+        dove_count = pop_counter["dove"]
+        window = int(round(params["GEN"]*0.1,0))
+        rolling_prop = rolling_avg(results["proportion of dove"],window)
+        avg_pop = rolling_avg(results["total population"],window)
+        try:
+            year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
+        except:
+            year_t = [len(pop_t), dove_count, 0, 0, exp,rolling_prop,avg_pop]
+        return year_t
+    except TypeError:
+        return [0,0,0,0,exp,0,0]
 
 ################
 # purge
@@ -226,24 +233,23 @@ def study_population_basic(pop_t, exp,results,params):
 
 
 def purge(pop_t, params):
+    to_purge = pop_t
     """This function handles the population limit"""
     if len(pop_t) < params["MAX_POP"]:
-        return pop_t
-    else :
+        return to_purge
+    elif len(pop_t) >= params["MAX_POP"] :
         if params["LIMIT_RANDOM"]:
-            shuffle(pop_t)
-            pop_t = pop_t[:params["MAX_POP"]]
-            return pop_t
+            shuffle(to_purge)
+            to_purge = to_purge[:(params["MAX_POP"]-1)]
+            return to_purge
 
         elif params["LIMIT_OLD"]:
-            pop_t.sort(key=lambda x: x.generation, reverse=True)
-            pop_t = pop_t[:params["MAX_POP"]]
-            return pop_t
+            to_purge.sort(key=lambda x: x.id, reverse=False)
+            return to_purge[:(params["MAX_POP"]-1)]
 
         elif params["LIMIT_YOUNG"]:
-            pop_t.sort(key=lambda x: x.generation, reverse=False)
-            pop_t = pop_t[:params["MAX_POP"]]
-            return pop_t
+            to_purge.sort(key=lambda x: x.id, reverse=True)
+            return to_purge[:(params["MAX_POP"]-1)]
         else :
             raise"ERROR : no method selected for purge"
 
