@@ -124,12 +124,10 @@ class MainWindow(QWidget):
             self.parameters["DOVE_SHAPE"] = self.std_dove.value()
         else:
             self.parameters["IS_FOOD_SEARCH"] = False
-        #(self.parameters)
 
-
-
-        self.thread = handle_simulation(self.parameters,self.results)
+        self.thread = handle_simulation(self.parameters, self.results)
         self.th2 = update_progress_bar(self.results, self.parameters)
+
         self.th2.progress.connect(self.update_babar)
         self.thread.simulation.connect(self.gen_graph)
 
@@ -143,14 +141,12 @@ class MainWindow(QWidget):
         self.handle_simulation_result(new_fig)
 
     def stop_threads(self):
-        if hasattr(self, 'thread') and self.thread.isRunning():
-            #self.thread.stop()
+        if hasattr(self,'thread') and self.thread.isRunning():
             self.thread.quit()
             self.thread.terminate()
             self.thread.wait()
 
-        if hasattr(self, 'th2') and self.th2.isRunning():
-            #self.th2.stop()
+        if hasattr(self,'th2') and self.th2.isRunning():
             self.th2.quit()
             self.th2.terminate()
             self.th2.wait()
@@ -201,6 +197,10 @@ class MainWindow(QWidget):
         #create progress bar
         self.prog_bar = QProgressBar(self)
 
+
+        #create the the threads
+        self.thread = handle_simulation(None,None)
+        self.th2 = update_progress_bar(None,None)
         #create the matrix of parameters
         matrix_v_grid = QGridLayout()
         self.p_HH = QDoubleSpinBox(self)
@@ -263,7 +263,7 @@ class MainWindow(QWidget):
         self.launch = QPushButton("Apply and start")
         self.launch.setStyleSheet("background-color: green;")
         self.launch.clicked.connect(self.launch_sim)
-        self.stop_button = QPushButton("Stop")
+        self.stop_button = QPushButton("Stop/Reset")
         self.stop_button.setStyleSheet("background-color: red;")
         self.stop_button.clicked.connect(self.stop_threads)
 
