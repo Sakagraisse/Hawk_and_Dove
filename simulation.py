@@ -70,11 +70,11 @@ def run_sim(params,results):
         # create stats
         update_expectancy(pop,expectancy)
         pop_stats = study_population_basic(pop, calc_exp(expectancy),results,params)
+
         #store
         ds.add_line(pop_stats,results)
     #generate the graph and return it
-    graph = ds.get_plot_2(results,params)
-    return graph
+    return None
 
 
 def update_expectancy(data,exp):

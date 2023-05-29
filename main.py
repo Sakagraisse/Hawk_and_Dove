@@ -8,20 +8,23 @@ from PyQt6 import QtGui
 import simulation as sim
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib import pyplot as plt
+import matplotlib
+import data_storage as ds
 import time
 import pandas as pd
 from matplotlib.figure import Figure
 
 
 class handle_simulation(QThread):
-    simulation = pyqtSignal(Figure)
+    simulation = pyqtSignal(int)
     def __init__(self, parameters, results):
         super().__init__()
         self.parameters = parameters
         self.results = results
     def run(self):
-        new_fig = sim.run_sim(self.parameters,self.results)
-        self.simulation.emit(new_fig)
+        print(9)
+        sim.run_sim(self.parameters,self.results)
+        self.simulation.emit(1)
 
 class update_progress_bar(QThread):
     progress = pyqtSignal(int)
@@ -125,20 +128,26 @@ class MainWindow(QWidget):
             self.parameters["IS_FOOD_SEARCH"] = False
         #(self.parameters)
 
+        popo = self.parameters
+        pipi = self.results
 
-
-        self.thread = handle_simulation(self.parameters,self.results)
+        self.thread = handle_simulation(popo,pipi)
+        self.thread.simulation.connect(self.gen_graph)
         self.th2 = update_progress_bar(self.results, self.parameters)
+
         self.th2.progress.connect(self.update_babar)
-        self.thread.simulation.connect(self.handle_simulation_result)
-
-        self.thread.start()
         self.th2.start()
+        #new_fig = sim.run_sim(self.parameters,self.results)
+        #self.handle_simulation_result(new_fig)
+        self.thread.start()
         self.thread.quit()
-        self.th2.quit()
+        # self.th2.quit()
 
 
-
+    def gen_graph(self,a):
+        a=1
+        new_fig = ds.get_plot_2(self.results, self.parameters)
+        self.handle_simulation_result(new_fig)
 
     def stop_threads(self):
         if hasattr(self, 'thread') and self.thread.isRunning():
@@ -159,15 +168,20 @@ class MainWindow(QWidget):
         self.prog_bar.update()
 
 
-    def handle_simulation_result(self, new_fig):
+    def handle_simulation_result(self,new_fig):
+        print(0)
         self.fig = new_fig
-
+        print(1)
         new_canvas = FigureCanvas(self.fig)
-        #self.fig_box.removeWidget(self.image)
+        print(2)
         self.fig_box.replaceWidget(self.canvas, new_canvas)
+        print(3)
         self.canvas = new_canvas
+        print(4)
         self.change_to_graph()
+        print(5)
         self.switch_graph.setChecked(True)
+        print(6)
 
     def update_groupbox_graph(self):
         self.groupbox_graph.update()
