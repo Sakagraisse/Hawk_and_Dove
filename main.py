@@ -9,19 +9,20 @@ import simulation as sim
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib import pyplot as plt
 import time
+import data_storage as ds
 import pandas as pd
 from matplotlib.figure import Figure
 
 
 class handle_simulation(QThread):
-    simulation = pyqtSignal(Figure)
+    simulation = pyqtSignal(int)
     def __init__(self, parameters, results):
         super().__init__()
         self.parameters = parameters
         self.results = results
     def run(self):
-        new_fig = sim.run_sim(self.parameters,self.results)
-        self.simulation.emit(new_fig)
+        sim.run_sim(self.parameters,self.results)
+        self.simulation.emit(1)
 
 class update_progress_bar(QThread):
     progress = pyqtSignal(int)
@@ -123,36 +124,33 @@ class MainWindow(QWidget):
             self.parameters["DOVE_SHAPE"] = self.std_dove.value()
         else:
             self.parameters["IS_FOOD_SEARCH"] = False
-        #(self.parameters)
 
-
-
-        self.thread = handle_simulation(self.parameters,self.results)
+        self.thread = handle_simulation(self.parameters, self.results)
         self.th2 = update_progress_bar(self.results, self.parameters)
+
         self.th2.progress.connect(self.update_babar)
-        self.thread.simulation.connect(self.handle_simulation_result)
+        self.thread.simulation.connect(self.gen_graph)
 
         self.thread.start()
         self.th2.start()
         self.thread.quit()
         self.th2.quit()
 
-
-
+    def gen_graph(self, a):
+        new_fig = ds.get_plot_2(self.results, self.parameters)
+        self.handle_simulation_result(new_fig)
 
     def stop_threads(self):
-        if hasattr(self, 'thread') and self.thread.isRunning():
-            self.thread.stop()
+        if hasattr(self,'thread') and self.thread.isRunning():
             self.thread.quit()
             self.thread.terminate()
             self.thread.wait()
 
-        if hasattr(self, 'th2') and self.th2.isRunning():
-            self.th2.stop()
+        if hasattr(self,'th2') and self.th2.isRunning():
             self.th2.quit()
             self.th2.terminate()
             self.th2.wait()
-        self.handle_simulation_result(plt.plot)
+        self.handle_simulation_result(None)
         self.update_babar(0)
     def update_babar(self, percent):
         self.prog_bar.setValue(percent)
@@ -199,6 +197,10 @@ class MainWindow(QWidget):
         #create progress bar
         self.prog_bar = QProgressBar(self)
 
+
+        #create the the threads
+        self.thread = handle_simulation(None,None)
+        self.th2 = update_progress_bar(None,None)
         #create the matrix of parameters
         matrix_v_grid = QGridLayout()
         self.p_HH = QDoubleSpinBox(self)
@@ -261,7 +263,7 @@ class MainWindow(QWidget):
         self.launch = QPushButton("Apply and start")
         self.launch.setStyleSheet("background-color: green;")
         self.launch.clicked.connect(self.launch_sim)
-        self.stop_button = QPushButton("Stop")
+        self.stop_button = QPushButton("Stop/Reset")
         self.stop_button.setStyleSheet("background-color: red;")
         self.stop_button.clicked.connect(self.stop_threads)
 
@@ -291,10 +293,8 @@ class MainWindow(QWidget):
         self.mean_hawk.setRange(-20, 20)
         self.mean_dove.setValue(0)
         self.mean_hawk.setValue(-0.3)
-        self.std_dove.setMinimum(0)
-        self.std_hawk.setMinimum(0)
-        self.std_dove.setRange(-20,20)
-        self.std_hawk.setRange(-20,20)
+        self.std_dove.setRange(0,20)
+        self.std_hawk.setRange(0,20)
         self.std_dove.setValue(0.3)
         self.std_hawk.setValue(0.3)
         food_label_dove = QLabel('Dove')
@@ -402,6 +402,7 @@ class MainWindow(QWidget):
         limit_pop_button_Qgroup.addButton(self.pop_limit_olders_win)
         limit_pop_button_Qgroup.addButton(self.pop_limit_youngers_win)
         limit_pop_button_Qgroup.setExclusive(True)
+        self.pop_limit_random_check.setChecked(True)
         #
         pop_limit_layout = QHBoxLayout()
         pop_limit_layout.addWidget(self.pop_limit_random_check)

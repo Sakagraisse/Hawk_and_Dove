@@ -18,16 +18,16 @@ def get_plot_2(results,params):
     results["prop_dove_rolling"].plot(ax=axs[0],label = "Rolling average")
     axs[0].axhline(y=expected_equilibrium, color='red', linestyle='--',label = "Expected Equilibrium")
     axs[0].set_title("Population proportion")
-    axs[0].legend(loc = "upper left")
+    axs[0].legend(loc = "upper right")
     results[['total population']].plot(ax=axs[1],label = "total population")
     results["total_pop_avg"].plot(ax=axs[1],label = "Rolling average")
     axs[1].set_title("Population growth")
-    axs[1].legend(loc = "upper left")
+    axs[1].legend(loc = "lower right")
     plt.tight_layout()
     if params["SAVE"]:
         now = datetime.now()
         filename = now.strftime("%H%M%S")
-        plt.savefig(f"graph_{filename}.png",dpi=200)
+        plt.savefig(f"graph_{filename}.png",dpi=400)
 
     #fig = ax.get_figure()
     return fig
