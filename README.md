@@ -9,7 +9,15 @@ Florent **DABURON**	florent.daburon@unil.ch
 
 The aim of this project is to simulate game theory results to see if the Mixed Strategy Equilibrium is robust to model changes (mutation, and others). The paper associated is attached to the github repo for a complete explanation.
 
-# Getting Started
+# Report
+Look at our report for a complete explanation of the project and its results. Name of the file is "Paper_Daburon_Lorenz.pdf" above.
+
+# Getting Started For Users
+1. Download the file for your platform from the release section.
+2. Follow the installation instructions in the release section for your platform.
+3. Be playfull and find our easter cat !
+
+# Getting Started For Programers
 
 1. Open the project in your favourite IDE, making sure that the requirements.txt is present to install all necessary packages. When it is done, simply run the main file.
 2. If you cannot be bothered with running the program yourself, simply download the file for your platform from the release section (Windows and Linux only).**NOTE:** this program has been developed on Windows, and tested on Windows and Linux (Ubuntu via Windows Subsytem for Linux). It may or may not function on MacOS with the source code as we do not possess such kind of piece of art to work on it. An issue as been indentified with the multi-threading behavior on macs with Apple Silicion.
