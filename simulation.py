@@ -1,88 +1,86 @@
 ################
 #import libraries and dependencies
 ################
-from random import random, shuffle , seed
-from numpy.random import normal
+import numpy as np
 import data_storage as ds
-from collections import Counter
-from copy import deepcopy
-import pandas as pd
 
-import pandas as pd
-# Create a player class that give his type : hawk or dove
-# id is unique identifier
-# fitness is the survival rate of an individual if inferior to 1
-class Player :
-    ID = 0
-    def __init__(self,type):
-        self.type = type
-        self.id = Player.ID
-        Player.ID += 1
-        self.fitness = 1
+TYPE_DOVE = 0
+TYPE_HAWK = 1
 
 
-def calc_exp(dict):
-    return sum(dict.values())/Player.ID
+def calc_exp(exp_dict, total_ids):
+    if total_ids <= 0:
+        return 0
+    return sum(exp_dict.values()) / total_ids
+
+
 #Main loop for simulation
 #Take parameters from the GUI as input ( default parameters defined in the main.py via the def class for PyQt
 
-def run_sim(params,results):
+def run_sim(params, results):
     """This function handles the simulation"""
-    # Set the desired seed for replicability of a random one if negative
-    progress = 0
     if params["SEED"] < 0:
-        seed()
+        rng = np.random.default_rng()
     else:
-        seed(params["SEED"])
+        rng = np.random.default_rng(params["SEED"])
 
-    # set up the base payoffs of the hawk and dove game ( also base fitness in this case )
-    # payoffs = {"hawk / hawk": 1+params["V"] / 2 - params["C"], "hawk / dove": 1+params["VHD"],
-    #            "dove/hawk": 1, "dove/dove": 1+params["VDD"] / 2}
-    payoffs = {"hawk / hawk": params["PHH"], "hawk / dove": params["PHD"],
-               "dove/hawk": params["PDH"], "dove/dove": params["PDD"]}
+    payoffs = {
+        "hawk / hawk": params["PHH"],
+        "hawk / dove": params["PHD"],
+        "dove/hawk": params["PDH"],
+        "dove/dove": params["PDD"],
+    }
 
+    types, ids, next_id = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"], rng)
+    expectancy = {int(id_): 0 for id_ in ids}
 
-    #create the initial population
-    pop = create_initial_pop(params["INITIAL_POP"], params["INITIAL_DOVE"])
+    results.loc[0] = [
+        0,
+        len(types),
+        0,
+        params["INITIAL_DOVE"],
+        1 - params["INITIAL_DOVE"],
+        0,
+        params["INITIAL_DOVE"],
+        len(types),
+    ]
 
-    expectancy = {}
-    for individual in pop :
-        expectancy[individual.ID] = 0
-    #create the initial line of statistics
-    results.loc[0] = [0,len(pop),0,params["INITIAL_DOVE"], 1-params["INITIAL_DOVE"], 0,params["INITIAL_DOVE"],len(pop)]
-
-    # Main loop for simulation
-    for period in range(1, params["GEN"]+1):
-        progress = progress + period/params["GEN"]
-        #pairing and pairwise payoff calculation
-        pop = fight(pop, params["V_DEF"] ,params["NODES"],payoffs)
-        #add malus for time to catch
+    for period in range(1, params["GEN"] + 1):
+        fitness = fight(types, params["V_DEF"], params["NODES"], payoffs, rng)
         if params["IS_FOOD_SEARCH"]:
-            food_search(pop,params["HAWK_MEAN"],
-                        params["HAWK_SHAPE"],
-                        params["DOVE_MEAN"],
-                        params["DOVE_SHAPE"])
+            fitness = food_search(
+                types,
+                fitness,
+                params["HAWK_MEAN"],
+                params["HAWK_SHAPE"],
+                params["DOVE_MEAN"],
+                params["DOVE_SHAPE"],
+                rng,
+            )
 
-        # Create the offspring according to the fitness of each individual
-        pop = selection2(pop,params["HAWK_MUTATION"] ,params["DOVE_MUTATION"])
-        # Remove excess individuals if needed
-        # store the new line of statistics 
-        # create stats
-        pop = purge(pop, params)
-        update_expectancy(pop,expectancy)
-        pop_stats = study_population_basic(pop, calc_exp(expectancy),results,params)
-        #store
-        ds.add_line(pop_stats,results)
-    #generate the graph and return it
+        types, ids, next_id = selection2(
+            types,
+            ids,
+            fitness,
+            params["HAWK_MUTATION"],
+            params["DOVE_MUTATION"],
+            rng,
+            next_id,
+        )
+        types, ids = purge(types, ids, params, rng)
+        update_expectancy(ids, expectancy)
+        exp_value = calc_exp(expectancy, next_id)
+        pop_stats = study_population_basic(types, exp_value, results, params)
+        ds.add_line(pop_stats, results)
     return None
 
 
-def update_expectancy(data,exp):
+def update_expectancy(ids, exp):
     try:
-        for individual in data :
-            if individual.ID in exp.keys() : exp[individual.ID] += 1
-            else : exp[individual.ID] = 1
-    except:
+        for id_ in ids:
+            key = int(id_)
+            exp[key] = exp.get(key, 0) + 1
+    except Exception:
         pass
 
 
@@ -92,11 +90,19 @@ def update_expectancy(data,exp):
 # function that create the starting population.
 # There is a number of individual set by : number_of_indiv
 # and the proportion of dove is set by : number_of_doves
-def create_initial_pop(number_of_indiv, number_of_doves):
+
+def create_initial_pop(number_of_indiv, number_of_doves, rng):
     """This function creates the initial population with user-defined parameters"""
-    total_doves = int(round(number_of_doves * number_of_indiv,0))
-    # Utiliser une liste en compréhension
-    return [Player("dove") if i < total_doves else Player("hawk") for i in range(number_of_indiv)]
+    total_doves = int(round(number_of_doves * number_of_indiv, 0))
+    types = np.empty(number_of_indiv, dtype=np.int8)
+    types[:total_doves] = TYPE_DOVE
+    types[total_doves:] = TYPE_HAWK
+    ids = np.arange(number_of_indiv, dtype=np.int64)
+    perm = rng.permutation(number_of_indiv)
+    types = types[perm]
+    ids = ids[perm]
+    next_id = number_of_indiv
+    return types, ids, next_id
 
 
 ################
@@ -104,56 +110,75 @@ def create_initial_pop(number_of_indiv, number_of_doves):
 ################
 # We simulate "food nodes" to which the population can go to. If they end up at a node alone, they eat the default value. Otherwise, they fight
 # over what is present
-def fight(to_study,default,nodes,payoffs):
+
+def fight(types, default, nodes, payoffs, rng):
     """This function handles interactions between types"""
-    #the nodes fill the rest of the population ; it means that as long as the population doesn't hit the node cap,
-    #they will have opportunity to reproduce freely
-    nodes_list = [0]*(nodes-len(to_study))
-    temp_list = to_study + nodes_list
-    shuffle(temp_list)
-    for i in range(0,len(temp_list)-1,2):
-        #we first need to check that the pairing is not an empty node with itself
-        if temp_list[i] == 0 and temp_list[i+1] == 0:
-            pass
-        #then if there is a player "by itself", it gets the default value (survive + reproduce)
-        elif temp_list[i] == 0 and temp_list[i+1] != 0:
-            temp_list[i+1].fitness = default
+    total_pop = len(types)
+    if nodes < total_pop:
+        nodes = total_pop
 
-        elif temp_list[i] != 0 and temp_list[i+1] == 0:
-            temp_list[i].fitness = default
-        #there is an effective pairing, and fight / cooperation ensues
-        elif temp_list[i].type == "hawk" and temp_list[i+1].type == "hawk":
-            temp_list[i].fitness = payoffs["hawk / hawk"]
-            temp_list[i+1].fitness = payoffs["hawk / hawk"]
+    positions = np.full(nodes, -1, dtype=np.int64)
+    positions[:total_pop] = np.arange(total_pop, dtype=np.int64)
+    rng.shuffle(positions)
+    positions = positions[: nodes - (nodes % 2)]
+    pairs = positions.reshape(-1, 2)
 
-        elif temp_list[i].type == "hawk" and temp_list[i+1].type == "dove":
-            temp_list[i].fitness = payoffs["hawk / dove"]
-            temp_list[i+1].fitness = payoffs["dove/hawk"]
-        elif temp_list[i].type == "dove" and temp_list[i+1].type == "hawk":
-            temp_list[i].fitness = payoffs["dove/hawk"]
-            temp_list[i+1].fitness = payoffs["hawk / dove"]
-        else:
-            temp_list[i].fitness = payoffs["dove/dove"]
-            temp_list[i+1].fitness = payoffs["dove/dove"]
-    #removes every node to keep only the population
-    final_array = []
-    for item in temp_list:
-        if item != 0: final_array.append(item)
-    return final_array
+    fitness = np.zeros(total_pop, dtype=np.float64)
+    a = pairs[:, 0]
+    b = pairs[:, 1]
+
+    mask_a = a >= 0
+    mask_b = b >= 0
+
+    idx = (~mask_a) & mask_b
+    fitness[b[idx]] = default
+
+    idx = mask_a & (~mask_b)
+    fitness[a[idx]] = default
+
+    idx = mask_a & mask_b
+    if np.any(idx):
+        a_idx = a[idx]
+        b_idx = b[idx]
+        types_a = types[a_idx]
+        types_b = types[b_idx]
+
+        hh = (types_a == TYPE_HAWK) & (types_b == TYPE_HAWK)
+        hd = (types_a == TYPE_HAWK) & (types_b == TYPE_DOVE)
+        dh = (types_a == TYPE_DOVE) & (types_b == TYPE_HAWK)
+        dd = (types_a == TYPE_DOVE) & (types_b == TYPE_DOVE)
+
+        if np.any(hh):
+            fitness[a_idx[hh]] = payoffs["hawk / hawk"]
+            fitness[b_idx[hh]] = payoffs["hawk / hawk"]
+        if np.any(hd):
+            fitness[a_idx[hd]] = payoffs["hawk / dove"]
+            fitness[b_idx[hd]] = payoffs["dove/hawk"]
+        if np.any(dh):
+            fitness[a_idx[dh]] = payoffs["dove/hawk"]
+            fitness[b_idx[dh]] = payoffs["hawk / dove"]
+        if np.any(dd):
+            fitness[a_idx[dd]] = payoffs["dove/dove"]
+            fitness[b_idx[dd]] = payoffs["dove/dove"]
+
+    return fitness
+
 
 ################
 # implements a version of the model where each animal spends time, reducing fitness,
 # to search for food
 ################
-def food_search(population,mean_hawk,shape_hawk,mean_dove,shape_dove):
+
+def food_search(types, fitness, mean_hawk, shape_hawk, mean_dove, shape_dove, rng):
     """This function handles the special case where types need time to get to the node"""
-    for animal in population:
-        if animal.type == "hawk":
-            animal.fitness -= normal(loc = mean_hawk,
-                                 scale = shape_hawk)
-        else:
-            animal.fitness -= normal(loc = mean_dove,
-                                 scale = shape_dove)
+    hawk_mask = types == TYPE_HAWK
+    dove_mask = ~hawk_mask
+    if np.any(hawk_mask):
+        fitness[hawk_mask] -= rng.normal(loc=mean_hawk, scale=shape_hawk, size=hawk_mask.sum())
+    if np.any(dove_mask):
+        fitness[dove_mask] -= rng.normal(loc=mean_dove, scale=shape_dove, size=dove_mask.sum())
+    return fitness
+
 
 ################
 # Compute the next generation of the population
@@ -163,41 +188,43 @@ def food_search(population,mean_hawk,shape_hawk,mean_dove,shape_dove):
 #survives for sure, and creates descendants surely for every floor(integer)-1
 #The decimal part can then be created or not
 #finally, we check mutation for each new descendant
-def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
+
+def selection2(types, ids, fitness, hawk_to_dove=0, dove_to_hawk=0, rng=None, next_id=0):
     """This function handles how the population goes to the next generation"""
-    final_array = []
-    for individual in pop_t:
-        descendants = []
-        #for some reason, a fitness of 1 is an edge-case scenario
-        if individual.fitness > 1:
-            descendants.append(individual)
-            residual_fitness = individual.fitness - 1
-            for i in range(0,int(residual_fitness)):
-                if individual.type == "hawk":
-                    if random() < hawk_to_dove : descendants.append(Player("dove"))
-                    else: descendants.append(Player("hawk"))
-                else:
-                    if random() < dove_to_hawk: descendants.append(Player("hawk"))
-                    else: descendants.append(Player("dove"))
+    new_types = []
+    new_ids = []
 
-            if residual_fitness < 1 and random() < residual_fitness :
-                if individual.type == "hawk":
-                    if random() < hawk_to_dove : descendants.append(Player("dove"))
-                    else: descendants.append(Player("hawk"))
-                else:
-                    if random() < dove_to_hawk : descendants.append(Player("hawk"))
-                    else: descendants.append(Player("dove"))
+    for t, id_, fit in zip(types, ids, fitness):
+        if fit > 1:
+            new_types.append(t)
+            new_ids.append(int(id_))
+            residual = fit - 1
+            extra_count = int(residual)
+            if rng.random() < (residual - extra_count):
+                extra_count += 1
 
-        elif individual.fitness == 1 :
-            descendants.append(individual)
+            if extra_count > 0:
+                if t == TYPE_HAWK:
+                    mutated = rng.random(extra_count) < hawk_to_dove
+                    extra_types = np.where(mutated, TYPE_DOVE, TYPE_HAWK)
+                else:
+                    mutated = rng.random(extra_count) < dove_to_hawk
+                    extra_types = np.where(mutated, TYPE_HAWK, TYPE_DOVE)
+
+                new_types.extend(extra_types.tolist())
+                new_ids.extend(range(next_id, next_id + extra_count))
+                next_id += extra_count
+
+        elif fit == 1:
+            new_types.append(t)
+            new_ids.append(int(id_))
 
         else:
-            if random() < individual.fitness : descendants.append(individual)
+            if rng.random() < fit:
+                new_types.append(t)
+                new_ids.append(int(id_))
 
-        final_array = final_array + descendants
-
-    return final_array
-
+    return np.array(new_types, dtype=np.int8), np.array(new_ids, dtype=np.int64), next_id
 
 
 ################
@@ -205,21 +232,30 @@ def selection2(pop_t,dove_to_hawk=0,hawk_to_dove=0):
 ################
 # take the population and return the number of individual, the number of dove and the ratio
 
-def study_population_basic(pop_t, exp,results,params):
+def study_population_basic(types, exp, results, params):
     """This function handles the various statistics we track, and returns a list of them"""
     try:
-        pop_counter = Counter(p.type for p in pop_t)
-        dove_count = pop_counter["dove"]
-        window = int(round(params["GEN"]*0.1,0))
-        rolling_prop = rolling_avg(results["proportion of dove"],window)
-        avg_pop = rolling_avg(results["total population"],window)
+        total = len(types)
+        dove_count = int(np.sum(types == TYPE_DOVE))
+        window = int(round(params["GEN"] * 0.1, 0))
+        rolling_prop = rolling_avg(results["proportion of dove"], window)
+        avg_pop = rolling_avg(results["total population"], window)
         try:
-            year_t = [len(pop_t), dove_count, dove_count/len(pop_t), 1-dove_count/len(pop_t), exp,rolling_prop,avg_pop]
-        except:
-            year_t = [len(pop_t), dove_count, 0, 0, exp,rolling_prop,avg_pop]
+            year_t = [
+                total,
+                dove_count,
+                dove_count / total,
+                1 - dove_count / total,
+                exp,
+                rolling_prop,
+                avg_pop,
+            ]
+        except Exception:
+            year_t = [total, dove_count, 0, 0, exp, rolling_prop, avg_pop]
         return year_t
     except TypeError:
-        return [0,0,0,0,exp,0,0]
+        return [0, 0, 0, 0, exp, 0, 0]
+
 
 ################
 # purge
@@ -231,30 +267,28 @@ def study_population_basic(pop_t, exp,results,params):
 # shuffle the population
 # remove the first individuals until the pop is below the limit
 
-
-def purge(pop_t, params):
-    to_purge = pop_t
+def purge(types, ids, params, rng):
     """This function handles the population limit"""
-    if len(pop_t) < params["MAX_POP"]:
-        return to_purge
-    elif len(pop_t) >= params["MAX_POP"] :
+    total = len(types)
+    if total < params["MAX_POP"]:
+        return types, ids
+    if total >= params["MAX_POP"]:
+        target = params["MAX_POP"] - 1
         if params["LIMIT_RANDOM"]:
-            shuffle(to_purge)
-            to_purge = to_purge[:(params["MAX_POP"]-1)]
-            return to_purge
-
-        elif params["LIMIT_OLD"]:
-            to_purge.sort(key=lambda x: x.id, reverse=False)
-            return to_purge[:(params["MAX_POP"]-1)]
-
-        elif params["LIMIT_YOUNG"]:
-            to_purge.sort(key=lambda x: x.id, reverse=True)
-            return to_purge[:(params["MAX_POP"]-1)]
-        else :
-            raise"ERROR : no method selected for purge"
+            indices = rng.permutation(total)[:target]
+            return types[indices], ids[indices]
+        if params["LIMIT_OLD"]:
+            order = np.argsort(ids)
+            order = order[:target]
+            return types[order], ids[order]
+        if params["LIMIT_YOUNG"]:
+            order = np.argsort(ids)[::-1]
+            order = order[:target]
+            return types[order], ids[order]
+        raise "ERROR : no method selected for purge"
 
 
-def rolling_avg(data,window):
+def rolling_avg(data, window):
     """Calculates the rolling average of a column"""
-    effective_window = min(len(data),window)
-    return data[len(data)-effective_window:].mean()
+    effective_window = min(len(data), window)
+    return data[len(data) - effective_window :].mean()
