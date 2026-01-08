@@ -1,6 +1,7 @@
 ################
 #import libraries and dependencies
 ################
+import numba as nb
 import numpy as np
 import data_storage as ds
 
@@ -189,42 +190,61 @@ def food_search(types, fitness, mean_hawk, shape_hawk, mean_dove, shape_dove, rn
 #The decimal part can then be created or not
 #finally, we check mutation for each new descendant
 
+@nb.njit
+def selection2_numba(types, ids, fitness, hawk_to_dove, dove_to_hawk, next_id, seed):
+    np.random.seed(seed)
+    count = len(types)
+    keep = np.zeros(count, dtype=np.bool_)
+    extra_count = np.zeros(count, dtype=np.int64)
+
+    for i in range(count):
+        fit = fitness[i]
+        if fit > 1.0:
+            keep[i] = True
+            residual = fit - 1.0
+            extra = int(residual)
+            if np.random.random() < (residual - extra):
+                extra += 1
+            extra_count[i] = extra
+        elif fit == 1.0:
+            keep[i] = True
+        else:
+            if np.random.random() < fit:
+                keep[i] = True
+
+    total_new = keep.sum() + extra_count.sum()
+    new_types = np.empty(total_new, dtype=np.int8)
+    new_ids = np.empty(total_new, dtype=np.int64)
+    pos = 0
+
+    for i in range(count):
+        if keep[i]:
+            new_types[pos] = types[i]
+            new_ids[pos] = ids[i]
+            pos += 1
+        extra = extra_count[i]
+        if extra > 0:
+            parent_type = types[i]
+            for _ in range(extra):
+                if parent_type == TYPE_HAWK:
+                    mutated = np.random.random() < hawk_to_dove
+                    new_types[pos] = TYPE_DOVE if mutated else TYPE_HAWK
+                else:
+                    mutated = np.random.random() < dove_to_hawk
+                    new_types[pos] = TYPE_HAWK if mutated else TYPE_DOVE
+                new_ids[pos] = next_id
+                next_id += 1
+                pos += 1
+
+    return new_types, new_ids, next_id
+
+
 def selection2(types, ids, fitness, hawk_to_dove=0, dove_to_hawk=0, rng=None, next_id=0):
     """This function handles how the population goes to the next generation"""
-    new_types = []
-    new_ids = []
-
-    for t, id_, fit in zip(types, ids, fitness):
-        if fit > 1:
-            new_types.append(t)
-            new_ids.append(int(id_))
-            residual = fit - 1
-            extra_count = int(residual)
-            if rng.random() < (residual - extra_count):
-                extra_count += 1
-
-            if extra_count > 0:
-                if t == TYPE_HAWK:
-                    mutated = rng.random(extra_count) < hawk_to_dove
-                    extra_types = np.where(mutated, TYPE_DOVE, TYPE_HAWK)
-                else:
-                    mutated = rng.random(extra_count) < dove_to_hawk
-                    extra_types = np.where(mutated, TYPE_HAWK, TYPE_DOVE)
-
-                new_types.extend(extra_types.tolist())
-                new_ids.extend(range(next_id, next_id + extra_count))
-                next_id += extra_count
-
-        elif fit == 1:
-            new_types.append(t)
-            new_ids.append(int(id_))
-
-        else:
-            if rng.random() < fit:
-                new_types.append(t)
-                new_ids.append(int(id_))
-
-    return np.array(new_types, dtype=np.int8), np.array(new_ids, dtype=np.int64), next_id
+    if rng is None:
+        rng = np.random.default_rng()
+    seed = int(rng.integers(0, 2**31 - 1))
+    return selection2_numba(types, ids, fitness, hawk_to_dove, dove_to_hawk, next_id, seed)
 
 
 ################
